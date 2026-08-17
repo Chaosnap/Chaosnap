@@ -99,9 +99,9 @@
 <h2 align="center">My Favorite Repositories <img src="https://media.giphy.com/media/mGcNjsfWAjY5AEZNw6/giphy.gif" width="50"></h2>
 
 <div align="center">
-  <a href="https://github.com/VincentCroft/VOCALOID-TRANSFORM">
+  <a href="https://github.com/Chaosnap/VOCALOID-TRANSFORM">
     <img src="https://github-readme-stats.vercel.app/api/pin/?username=Chaosnap&repo=VOCALOID-TRANSFORM&theme=dark&bg_color=121212&hide_border=true" /></a>
-  <a href="https://github.com/VincentCroft/Learning-Coding">
+  <a href="https://github.com/Chaosnap/Learning-Coding">
     <img src="https://github-readme-stats.vercel.app/api/pin/?username=Chaosnap&repo=Learning-Coding&theme=dark&bg_color=121212&hide_border=true" /></a>
 </div><br>   
 
