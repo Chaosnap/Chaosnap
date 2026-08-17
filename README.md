@@ -27,11 +27,11 @@
 
 <!--  统计信息 -->
 <div align="center">
-<a href="https://github.com/VincentCroft/github-readme-stats">
-  <img align="center" src="https://github-readme-stats.vercel.app/api?username=VincentCroft&show_icons=true&hide=prs&theme=codeSTACKr" />
+<a href="https://github.com/Chaosnap/github-readme-stats">
+  <img align="center" src="https://github-readme-stats.vercel.app/api?username=Chaosnap&show_icons=true&hide=prs&theme=codeSTACKr" />
 </a>
 <a href="https://github.com/anuraghazra/convoychat">
-  <img align="center" src="https://github-readme-stats.vercel.app/api/top-langs/?username=VincentCroft&layout=compact&theme=codeSTACKr" />
+  <img align="center" src="https://github-readme-stats.vercel.app/api/top-langs/?username=Chaosnap&layout=compact&theme=codeSTACKr" />
 </a>
 </div>
 
@@ -78,15 +78,15 @@
 <!-- https://github.com/Ashutosh00710/github-readme-activity-graph -->
 </p>
 <p align="center">
-<img width="800" src="https://github-readme-activity-graph.vercel.app/graph?username=VincentCroft&theme=github-compact&hide_border=true&area=true&custom_title=Activity%20Graph" alt="Activity Graph" title="Activity Graph" />
+<img width="800" src="https://github-readme-activity-graph.vercel.app/graph?username=Chaosnap&theme=github-compact&hide_border=true&area=true&custom_title=Activity%20Graph" alt="Activity Graph" title="Activity Graph" />
 </p>
 
 <!-- GitHub 奖杯🏆 -->
-<div align="center"><img src="https://github-profile-trophy-orcin-eta.vercel.app/?username=VincentCroft&theme=gruvbox&row=1&column=6&no-frame=true&no-bg=true" /></div><br>
+<div align="center"><img src="https://github-profile-trophy-orcin-eta.vercel.app/?username=Chaosnap&theme=gruvbox&row=1&column=6&no-frame=true&no-bg=true" /></div><br>
 
 <!-- Visitor Count -->
 <div align="center">
-  <img src="https://count.getloli.com/get/@VincentCroft?theme=booru-helltaker" alt="Visit Count" />
+  <img src="https://count.getloli.com/get/@Chaosnap?theme=booru-helltaker" alt="Visit Count" />
 </div>
 
 <!-- Hi There图 -->
@@ -100,9 +100,9 @@
 
 <div align="center">
   <a href="https://github.com/VincentCroft/VOCALOID-TRANSFORM">
-    <img src="https://github-readme-stats.vercel.app/api/pin/?username=VincentCroft&repo=VOCALOID-TRANSFORM&theme=dark&bg_color=121212&hide_border=true" /></a>
+    <img src="https://github-readme-stats.vercel.app/api/pin/?username=Chaosnap&repo=VOCALOID-TRANSFORM&theme=dark&bg_color=121212&hide_border=true" /></a>
   <a href="https://github.com/VincentCroft/Learning-Coding">
-    <img src="https://github-readme-stats.vercel.app/api/pin/?username=VincentCroft&repo=Learning-Coding&theme=dark&bg_color=121212&hide_border=true" /></a>
+    <img src="https://github-readme-stats.vercel.app/api/pin/?username=Chaosnap&repo=Learning-Coding&theme=dark&bg_color=121212&hide_border=true" /></a>
 </div><br>   
 
 ------
