@@ -20,7 +20,7 @@
   <a href="https://space.bilibili.com/2087892128/"><img src="https://img.shields.io/badge/bilibili-B站-ff69b4" /></a>&emsp;
   <a href="https://www.zhihu.com"><img src="https://img.shields.io/badge/zhihu-知乎-blue" /></a>&emsp;
 <!-- visitor statistics logo 访客数统计徽标 -->
-  <img src="https://api.visitorbadge.io/api/visitors?path=Chaosnap&label=Visitors&countColor=%23263759" alt="访客统计" />
+<img src="https://api.visitorbadge.io/api/visitors?path=Chaosnap.GitHubProfile&label=visitors%20访客&labelColor=%23555555&countColor=%23007ec6&style=flat" />
 
 <!-- Snake Code Contribution Map 贪吃蛇代码贡献图 -->
 <div align="center"><img src="https://raw.githubusercontent.com/Chaosnap/Github-Profile-Snake/c8f832beaffc3454aacca29c5c02b2e5b7b78f19/github-contribution-grid-snake-dark.svg" /></div>
