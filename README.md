@@ -26,13 +26,24 @@
 <div align="center"><img src="https://raw.githubusercontent.com/Chaosnap/Github-Profile-Snake/c8f832beaffc3454aacca29c5c02b2e5b7b78f19/github-contribution-grid-snake-dark.svg" /></div>
 
 <!--  统计信息 -->
+<!-- GitHub statistics -->
 <div align="center">
-<a href="https://github.com/Chaosnap/github-readme-stats">
-  <img align="center" src="https://github-readme-stats.vercel.app/api?username=Chaosnap&show_icons=true&hide=prs&theme=codeSTACKr" />
-</a>
-<a href="https://github.com/anuraghazra/convoychat">
-  <img align="center" src="https://github-readme-stats.vercel.app/api/top-langs/?username=Chaosnap&layout=compact&theme=codeSTACKr" />
-</a>
+  <a href="https://github.com/Chaosnap">
+    <img
+      height="195"
+      align="center"
+      src="./profile/stats.svg"
+      alt="GitHub Statistics"
+    />
+  </a>
+  <a href="https://github.com/Chaosnap?tab=repositories">
+    <img
+      height="195"
+      align="center"
+      src="./profile/top-langs.svg"
+      alt="Top Languages"
+    />
+  </a>
 </div>
 
 
