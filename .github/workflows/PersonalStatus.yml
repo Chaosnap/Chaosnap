@@ -46,13 +46,13 @@ jobs:
           path: profile/pin-vocaloid-transform.svg
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Learning-Coding
-      - name: Generate Learning-Coding card
+    # Fault_Classification_PMU_Data
+      - name: Generate Fault_Classification_PMU_Data card
         uses: stats-organization/github-readme-stats-action@v2
         with:
           card: pin
-          options: "username=${{ github.repository_owner }}&repo=Learning-Coding&theme=dark&bg_color=121212&hide_border=true"
-          path: profile/pin-learning-coding.svg
+          options: "username=${{ github.repository_owner }}&repo=Fault_Classification_PMU_Data&theme=dark&bg_color=121212&hide_border=true"
+          path: profile/pin-fault-classification-pmu-data.svg
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # Commit all generated SVG files
