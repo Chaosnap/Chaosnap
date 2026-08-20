@@ -101,7 +101,7 @@
         y="0"
         class="header"
         data-testid="header"
-      >VOCALOID-TRANSFORM</text>
+      >Fault_Classification_PMU_Data</text>
     </g>
       </g>
     
@@ -114,14 +114,14 @@
     
 
     <text class="description" x="25" y="-5"> 
-      <tspan dy="1.2em" x="25">A repo which made for transalte VOCALOID xpr files etc.</tspan>
+      <tspan dy="1.2em" x="25">No description provided</tspan>
     </text>
 
     <g transform="translate(30, 45)">
       <g transform="translate(0, 0)">
     <g data-testid="primary-lang">
-      <circle data-testid="lang-color" cx="0" cy="-5" r="6" fill="#A97BFF" />
-      <text data-testid="lang-name" class="gray" x="15">Kotlin</text>
+      <circle data-testid="lang-color" cx="0" cy="-5" r="6" fill="#DA5B0B" />
+      <text data-testid="lang-name" class="gray" x="15">Jupyter Notebook</text>
     </g>
     </g>
     </g>
