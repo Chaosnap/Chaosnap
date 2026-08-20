@@ -117,14 +117,14 @@
     />
   </a>
 
-  <a href="https://github.com/Chaosnap/Learning-Coding">
-    <img
-      align="center"
-      src="./profile/pin-learning-coding.svg"
-      alt="Learning-Coding"
-    />
-  </a>
-</div><br>   
+<a href="https://github.com/Chaosnap/Fault_Classification_PMU_Data">
+  <img
+    align="center"
+    src="./profile/pin-fault-classification-pmu-data.svg"
+    alt="Fault_Classification_PMU_Data"
+  />
+</a>
+</div><br>
 
 
 <!-- Spotify 音乐 -->
