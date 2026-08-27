@@ -131,7 +131,7 @@
 <div align="center">
   <img width="150" src="https://github.com/user-attachments/assets/b07975fc-1c49-4dbb-bf61-a9eedd8b0492" />&emsp;&emsp;&emsp;&emsp;&emsp;
   <!-- <img src="https://spotify-github-profile-psi-one.vercel.app/api/view?uid=yytfv9ur09jan3mixwnsd5rbk&cover_image=true&theme=default&show_offline=false&background_color=121212" /> -->
-  <img height="300" src="https://github.com/Chaosnap/Chaosnap/blob/124462ac4b1ff9b690fdfa30007a70d590bc7756/yorushika_hitchcock_exact_effect.svg"/>
+  <img height="400" src="https://github.com/Chaosnap/Chaosnap/blob/124462ac4b1ff9b690fdfa30007a70d590bc7756/yorushika_hitchcock_exact_effect.svg"/>
   &emsp;&emsp;&emsp;&emsp;&emsp;<img width="150" src="https://github.com/user-attachments/assets/b07975fc-1c49-4dbb-bf61-a9eedd8b0492" />
 </div>
 
