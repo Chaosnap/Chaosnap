@@ -131,7 +131,7 @@
 <div align="center">
   <img width="150" src="https://github.com/user-attachments/assets/b07975fc-1c49-4dbb-bf61-a9eedd8b0492" />&emsp;&emsp;&emsp;&emsp;&emsp;
   <!-- <img src="https://spotify-github-profile-psi-one.vercel.app/api/view?uid=yytfv9ur09jan3mixwnsd5rbk&cover_image=true&theme=default&show_offline=false&background_color=121212" /> -->
-  <img src=https://github.com/user-attachments/assets/13827dcb-b725-4852-9c90-9a7d83d8e079 height=279 alt="CUAYO!!" />
+  <img src=https://raw.githubusercontent.com/Chaosnap/Chaosnap/9bb00602fc244a123e990bbde16bae294323ea75/%7B%7D />
   &emsp;&emsp;&emsp;&emsp;&emsp;<img width="150" src="https://github.com/user-attachments/assets/b07975fc-1c49-4dbb-bf61-a9eedd8b0492" />
 </div>
 
