@@ -89,7 +89,7 @@
 <!-- https://github.com/Ashutosh00710/github-readme-activity-graph -->
 </p>
 <p align="center">
-<img width="800" src="https://github-readme-activity-graph.vercel.app/graph?username=Chaosnap&theme=github-compact&hide_border=true&area=true&custom_title=Activity%20Graph" alt="Activity Graph" title="Activity Graph" />
+<img width="800" src="https://github-readme-activity-graph-inky.vercel.app/graph?username=Chaosnap&theme=github-compact&hide_border=true&area=true&custom_title=Activity%20Graph" alt="Activity Graph" title="Activity Graph" />
 </p>
 
 <!-- GitHub 奖杯🏆 -->
