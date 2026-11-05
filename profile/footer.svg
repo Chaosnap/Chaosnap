@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="290" viewBox="0 0 1200 290" role="img" aria-label="The end. Seminar, science, intelligence, future">
+  <style>
+    .title { font: 700 88px Georgia, 'Times New Roman', serif; letter-spacing: 8px; fill: #fff7f0; }
+    .desc { font: italic 400 26px Georgia, 'Times New Roman', serif; letter-spacing: 3px; fill: #fff7f0; }
+    .spark { fill: #fff7f0; transform-box: fill-box; transform-origin: center; animation: twinkle 3.6s ease-in-out infinite; }
+    .d1 { animation-delay: 0.6s; }
+    .d2 { animation-delay: 1.2s; }
+    .d3 { animation-delay: 1.8s; }
+    .d4 { animation-delay: 2.4s; }
+    .d5 { animation-delay: 3s; }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; transform: scale(0.65) rotate(0deg); }
+      50% { opacity: 1; transform: scale(1.15) rotate(45deg); }
+    }
+  </style>
+  <defs>
+    <linearGradient id="rose" x1="0" y1="0" x2="1" y2="0.3">
+      <stop offset="0" stop-color="#8e3a59" />
+      <stop offset="0.55" stop-color="#d9798a" />
+      <stop offset="1" stop-color="#f4c6c3" />
+    </linearGradient>
+  </defs>
+  <path fill="url(#rose)" opacity="0.35" d="M0 290H1200V45C1000 90 800 10 600 50S200 90 0 45Z">
+    <animate attributeName="d" dur="16s" repeatCount="indefinite" values="M0 290H1200V45C1000 90 800 10 600 50S200 90 0 45Z;M0 290H1200V65C1000 15 800 95 600 55S200 15 0 65Z;M0 290H1200V45C1000 90 800 10 600 50S200 90 0 45Z" />
+  </path>
+  <path fill="url(#rose)" d="M0 290H1200V85C1000 40 800 125 600 85S200 40 0 85Z">
+    <animate attributeName="d" dur="12s" repeatCount="indefinite" values="M0 290H1200V85C1000 40 800 125 600 85S200 40 0 85Z;M0 290H1200V70C1000 115 800 40 600 78S200 120 0 70Z;M0 290H1200V85C1000 40 800 125 600 85S200 40 0 85Z" />
+  </path>
+  <path class="spark d1" d="M150 214c1.500 11 6 15.500 17 17-11 1.500-15.500 6-17 17-1.500-11-6-15.500-17-17 11-1.500 15.500-6 17-17z" />
+  <path class="spark d3" d="M285 138c1 7.500 4 10.500 11.500 11.500-7.500 1-10.500 4-11.500 11.500-1-7.500-4-10.500-11.500-11.500 7.500-1 10.500-4 11.500-11.500z" />
+  <path class="spark d5" d="M92 135c.8 5.500 3 7.700 8.500 8.500-5.500.8-7.700 3-8.500 8.500-.8-5.500-3-7.700-8.500-8.500 5.500-.8 7.700-3 8.500-8.500z" />
+  <path class="spark" d="M1052 222c1.500 11 6 15.500 17 17-11 1.500-15.500 6-17 17-1.500-11-6-15.500-17-17 11-1.500 15.500-6 17-17z" />
+  <path class="spark d2" d="M925 130c1 7.500 4 10.500 11.500 11.500-7.500 1-10.500 4-11.500 11.500-1-7.500-4-10.500-11.500-11.500 7.500-1 10.500-4 11.500-11.500z" />
+  <path class="spark d4" d="M1120 132c.8 5.500 3 7.700 8.500 8.500-5.500.8-7.700 3-8.500 8.500-.8-5.500-3-7.700-8.500-8.500 5.500-.8 7.700-3 8.500-8.500z" />
+  <text class="desc" x="600" y="158" text-anchor="middle">SEMINAR, SCIENCE, INTELLIGENCE, FUTURE</text>
+  <text class="title" x="600" y="244" text-anchor="middle">THE END</text>
+</svg>

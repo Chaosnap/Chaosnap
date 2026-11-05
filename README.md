@@ -1,8 +1,5 @@
 <!-- Hi There 波浪头图 -->
-<!-- https://github.com/kyechan99/capsule-render -->
-<p align="center">
-  <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:f2c9c4,50:c96f7f,100:8e3a59&height=240&section=header&text=HI%20THERE&fontColor=fff7f0&fontSize=80&fontAlign=50&fontAlignY=36&desc=I%20am%20Yuki&descSize=28&descAlign=50&descAlignY=58&animation=twinkling" alt="Hi There, I am Yuki" />
-</p>
+<p align="center"><img width="100%" src="./profile/header.svg" alt="Hi there, I am Yuki" /></p>
 
 <!-- dynamic typing effect 动态打字效果 -->
 <p align="center">
@@ -29,7 +26,7 @@
 <p align="center">
   <a href="https://github.com/Chaosnap?tab=followers"><img src="https://img.shields.io/github/followers/Chaosnap?style=for-the-badge&logo=github&logoColor=white&label=Followers&labelColor=3d3032&color=8e3a59" alt="Followers" /></a>
   <a href="https://github.com/Chaosnap?tab=repositories&sort=stargazers"><img src="https://img.shields.io/github/stars/Chaosnap?affiliations=OWNER&style=for-the-badge&logo=github&logoColor=white&label=Stars&labelColor=3d3032&color=c96f7f" alt="Stars" /></a>
-  <img height="28" src="https://visitor-badge.laobi.icu/badge?page_id=Chaosnap.GitHubProfile&left_text=VISITORS&left_color=8e3a59&right_color=3d3032" alt="访客统计" />
+  <img height="28" src="https://visitor-badge.laobi.icu/badge?page_id=Chaosnap.GitHubProfile&left_text=VISITORS&left_color=%238e3a59&right_color=%233d3032" alt="访客统计" />
 </p>
 
 <p align="center"><img src="./profile/divider.svg" width="100%" alt="" /></p>
@@ -41,13 +38,11 @@
   <tr>
     <td width="50%" valign="top" align="center">
       <a href="https://github.com/Chaosnap/Typewriter-Nocturne"><img src="./profile/pin-typewriter-nocturne.svg" width="100%" alt="Typewriter-Nocturne" /></a>
-      <a href="https://chaosnap.github.io/Typewriter-Nocturne/demo/"><img src="./profile/showcase-typewriter-nocturne.jpg" width="100%" alt="Typewriter Nocturne: a shell typed onto lit paper above a typewriter" /></a>
       <br />
       <sub><a href="https://chaosnap.github.io/Typewriter-Nocturne/">Docs</a> · <a href="https://chaosnap.github.io/Typewriter-Nocturne/demo/">Live demo</a> · <a href="https://github.com/Chaosnap/Typewriter-Nocturne/releases">Download</a></sub>
     </td>
     <td width="50%" valign="top" align="center">
       <a href="https://github.com/Chaosnap/Yohaku"><img src="./profile/pin-yohaku.svg" width="100%" alt="Yohaku" /></a>
-      <a href="https://chaosnap.github.io/Yohaku/"><img src="./profile/showcase-yohaku.jpg" width="100%" alt="Yohaku: reading a book with the song and its lyrics in the sidebar" /></a>
       <br />
       <sub><a href="https://chaosnap.github.io/Yohaku/">Docs</a> · <a href="https://chaosnap.github.io/Yohaku/changelog/">Changelog</a> · <a href="https://github.com/Chaosnap/Yohaku/releases/latest">Download</a></sub>
     </td>
@@ -120,9 +115,7 @@
 
 <!-- Spotify 音乐 -->
 <p align="center">
-  <img width="150" src="https://github.com/user-attachments/assets/b07975fc-1c49-4dbb-bf61-a9eedd8b0492" alt="" />&emsp;&emsp;
   <img height="400" src="./yorushika_hitchcock_exact_effect.svg" alt="Now playing: Yorushika - Hitchcock" />
-  &emsp;&emsp;<img width="150" src="https://github.com/user-attachments/assets/b07975fc-1c49-4dbb-bf61-a9eedd8b0492" alt="" />
 </p>
 
 <!-- just img 图片 -->
@@ -175,7 +168,4 @@
 <!-- just img 图片 -->
 <p align="center"><img src="./Sample.png" width="70%" alt="Seminar: science, intelligence, future" /></p>
 
-<p align="center">
-  <!-- https://github.com/kyechan99/capsule-render -->
-  <img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:8e3a59,50:c96f7f,100:f2c9c4&height=240&section=footer&text=THE%20END&fontColor=fff7f0&fontSize=80&fontAlign=50&fontAlignY=68&desc=SEMINAR,%20SCIENCE,%20INTELLIGENCE,%20FUTURE&descSize=22&descAlign=50&descAlignY=44&animation=twinkling" alt="The End" title="The End" />
-</p>
+<p align="center"><img width="100%" src="./profile/footer.svg" alt="The End" title="The End" /></p>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="290" viewBox="0 0 1200 290" role="img" aria-label="Hi there, I am Yuki">
+  <style>
+    .title { font: 700 92px Georgia, 'Times New Roman', serif; letter-spacing: 8px; fill: #fff7f0; animation: rise 1.2s ease-out both; }
+    .desc { font: italic 400 32px Georgia, 'Times New Roman', serif; letter-spacing: 2px; fill: #fff7f0; animation: rise 1.2s 0.25s ease-out both; }
+    .spark { fill: #fff7f0; transform-box: fill-box; transform-origin: center; animation: twinkle 3.6s ease-in-out infinite; }
+    .d1 { animation-delay: 0.6s; }
+    .d2 { animation-delay: 1.2s; }
+    .d3 { animation-delay: 1.8s; }
+    .d4 { animation-delay: 2.4s; }
+    .d5 { animation-delay: 3s; }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; transform: scale(0.65) rotate(0deg); }
+      50% { opacity: 1; transform: scale(1.15) rotate(45deg); }
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+  <defs>
+    <linearGradient id="rose" x1="0" y1="0" x2="1" y2="0.3">
+      <stop offset="0" stop-color="#f4c6c3" />
+      <stop offset="0.45" stop-color="#d9798a" />
+      <stop offset="1" stop-color="#8e3a59" />
+    </linearGradient>
+  </defs>
+  <path fill="url(#rose)" opacity="0.35" d="M0 0H1200V245C1000 200 800 280 600 240S200 200 0 245Z">
+    <animate attributeName="d" dur="16s" repeatCount="indefinite" values="M0 0H1200V245C1000 200 800 280 600 240S200 200 0 245Z;M0 0H1200V225C1000 275 800 195 600 235S200 275 0 225Z;M0 0H1200V245C1000 200 800 280 600 240S200 200 0 245Z" />
+  </path>
+  <path fill="url(#rose)" d="M0 0H1200V205C1000 250 800 165 600 205S200 250 0 205Z">
+    <animate attributeName="d" dur="12s" repeatCount="indefinite" values="M0 0H1200V205C1000 250 800 165 600 205S200 250 0 205Z;M0 0H1200V220C1000 175 800 250 600 212S200 170 0 220Z;M0 0H1200V205C1000 250 800 165 600 205S200 250 0 205Z" />
+  </path>
+  <path class="spark" d="M150 42c1.500 11 6 15.500 17 17-11 1.500-15.500 6-17 17-1.500-11-6-15.500-17-17 11-1.500 15.500-6 17-17z" />
+  <path class="spark d2" d="M285 128c1 7.500 4 10.500 11.500 11.500-7.500 1-10.500 4-11.500 11.500-1-7.500-4-10.500-11.500-11.500 7.500-1 10.500-4 11.500-11.500z" />
+  <path class="spark d4" d="M92 138c.8 5.500 3 7.700 8.500 8.500-5.500.8-7.700 3-8.500 8.500-.8-5.500-3-7.700-8.500-8.500 5.500-.8 7.700-3 8.500-8.500z" />
+  <path class="spark d1" d="M1052 34c1.500 11 6 15.500 17 17-11 1.500-15.500 6-17 17-1.500-11-6-15.500-17-17 11-1.500 15.500-6 17-17z" />
+  <path class="spark d3" d="M925 136c1 7.500 4 10.500 11.500 11.500-7.500 1-10.500 4-11.500 11.500-1-7.500-4-10.500-11.500-11.500 7.500-1 10.500-4 11.500-11.500z" />
+  <path class="spark d5" d="M1120 142c.8 5.500 3 7.700 8.500 8.500-5.500.8-7.700 3-8.500 8.500-.8-5.500-3-7.700-8.500-8.500 5.500-.8 7.700-3 8.500-8.500z" />
+  <text class="title" x="600" y="118" text-anchor="middle">HI THERE</text>
+  <text class="desc" x="600" y="168" text-anchor="middle">I am Yuki</text>
+</svg>
