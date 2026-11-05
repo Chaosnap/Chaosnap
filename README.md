@@ -25,8 +25,8 @@
 <!-- visitor statistics logo 访客数统计徽标 -->
 <p align="center">
   <a href="https://github.com/Chaosnap?tab=followers"><img src="https://img.shields.io/github/followers/Chaosnap?style=for-the-badge&logo=github&logoColor=white&label=Followers&labelColor=3d3032&color=8e3a59" alt="Followers" /></a>
-  <a href="https://github.com/Chaosnap?tab=repositories&sort=stargazers"><img src="https://img.shields.io/github/stars/Chaosnap?affiliations=OWNER&style=for-the-badge&logo=github&logoColor=white&label=Stars&labelColor=3d3032&color=c96f7f" alt="Stars" /></a>
-  <img height="28" src="https://visitor-badge.laobi.icu/badge?page_id=Chaosnap.GitHubProfile&left_text=VISITORS&left_color=%238e3a59&right_color=%233d3032" alt="访客统计" />
+  <a href="https://github.com/Chaosnap?tab=repositories&sort=stargazers"><img src="https://img.shields.io/github/stars/Chaosnap?affiliations=OWNER&style=for-the-badge&logo=github&logoColor=white&label=Stars&labelColor=3d3032&color=ab5270" alt="Stars" /></a>
+  <img src="https://hits.sh/github.com/Chaosnap.svg?style=for-the-badge&label=Visitors&extraCount=569&color=c96f7f&labelColor=3d3032&logo=github&logoColor=white" alt="访客统计" />
 </p>
 
 <p align="center"><img src="./profile/divider.svg" width="100%" alt="" /></p>
