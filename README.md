@@ -1,15 +1,17 @@
 <!-- Hi There 波浪头图 -->
 <p align="center"><img width="100%" src="./profile/header.svg" alt="Hi there, I am Yuki" /></p>
 
+
+
+<!-- img -->
+<p align="center"><img src="./C.png" width="100%" alt="Banner" /></p>
+
 <!-- dynamic typing effect 动态打字效果 -->
 <p align="center">
   <a href="https://chaosnap.github.io/">
     <img src="https://readme-typing-svg.demolab.com/?lines=Hi%E2%99%A1~%EF%BC%81Hi%E2%99%A1~%E2%99%AA;%E4%BD%A0%E5%A5%BD%21%E8%B0%A2%E8%B0%A2%EF%BC%81%E5%B0%8F%E7%AC%BC%E5%8C%85%EF%BC%81%E5%86%8D%E8%A7%81%EF%BC%81;Every%20line%20of%20code%20should%20feel%20like%20writing%20poetry.;Where%20stories%20linger%2C%20and%20melodies%20become%20memories.&center=true&vCenter=true&width=760&height=56&size=27&color=C96F7F&pause=1400&font=Noto+Serif+SC" alt="Hi♡~！Hi♡~♪ 你好!谢谢！小笼包！再见！" />
   </a>
 </p>
-
-<!-- img -->
-<p align="center"><img src="./C.png" width="100%" alt="Banner" /></p>
 
 <!-- profile logo 个人资料徽标 -->
 <p align="center">
