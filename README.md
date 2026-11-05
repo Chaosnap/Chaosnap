@@ -9,7 +9,7 @@
 </p>
 
 <!-- img -->
-<p align="center"><img src="./Background.jpg" width="100%" alt="Banner" /></p>
+<p align="center"><img src="./C.png" width="100%" alt="Banner" /></p>
 
 <!-- profile logo 个人资料徽标 -->
 <p align="center">
