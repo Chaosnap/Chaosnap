@@ -6,10 +6,13 @@
 <!-- img -->
 <p align="center"><img src="./C.png" width="100%" alt="Banner" /></p>
 
-<!-- dynamic typing effect 动态打字效果 -->
+<!-- Tech Otaku Dynamic Typing ♡ -->
 <p align="center">
   <a href="https://chaosnap.github.io/">
-    <img src="https://readme-typing-svg.demolab.com/?lines=Hi%E2%99%A1~%EF%BC%81Hi%E2%99%A1~%E2%99%AA;%E4%BD%A0%E5%A5%BD%21%E8%B0%A2%E8%B0%A2%EF%BC%81%E5%B0%8F%E7%AC%BC%E5%8C%85%EF%BC%81%E5%86%8D%E8%A7%81%EF%BC%81;Every%20line%20of%20code%20should%20feel%20like%20writing%20poetry.;Where%20stories%20linger%2C%20and%20melodies%20become%20memories.&center=true&vCenter=true&width=760&height=56&size=27&color=C96F7F&pause=1400&font=Noto+Serif+SC" alt="Hi♡~！Hi♡~♪ 你好!谢谢！小笼包！再见！" />
+    <img
+      src="https://readme-typing-svg.demolab.com/?lines=Initializing%20World%20Line%201.048596...;%E3%82%82%E3%81%97%E4%B8%96%E7%95%8C%E3%81%8C%E3%83%90%E3%82%B0%E3%81%AA%E3%82%89%E3%80%81%E5%90%9B%E3%81%AF%E5%83%95%E3%81%AE%E3%83%91%E3%83%83%E3%83%81%E3%80%82;%E3%81%93%E3%81%AE%E4%B8%96%E7%95%8C%E7%B7%9A%E3%81%A7%E3%80%81%E3%81%BE%E3%81%9F%E5%90%9B%E3%81%AB%E4%BC%9A%E3%81%84%E3%81%9F%E3%81%84%E3%80%82;ERROR%20404%3A%20Social%20Life%20Not%20Found.;Reality%20is%20temporary.%20Code%20is%20eternal.&center=true&vCenter=true&width=760&height=56&size=27&color=C96F7F&pause=1400&font=Noto+Serif+SC"
+      alt="Initializing World Line 1.048596... ♡"
+    />
   </a>
 </p>
 
