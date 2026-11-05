@@ -34,20 +34,10 @@
 <!-- Awesome repo 比较好的仓库-->
 <h3 align="center">My Favorite Repositories <img src="https://media.giphy.com/media/mGcNjsfWAjY5AEZNw6/giphy.gif" width="32" alt="" /></h3>
 
-<table>
-  <tr>
-    <td width="50%" valign="top" align="center">
-      <a href="https://github.com/Chaosnap/Typewriter-Nocturne"><img src="./profile/pin-typewriter-nocturne.svg" width="100%" alt="Typewriter-Nocturne" /></a>
-      <br />
-      <sub><a href="https://chaosnap.github.io/Typewriter-Nocturne/">Docs</a> · <a href="https://chaosnap.github.io/Typewriter-Nocturne/demo/">Live demo</a> · <a href="https://github.com/Chaosnap/Typewriter-Nocturne/releases">Download</a></sub>
-    </td>
-    <td width="50%" valign="top" align="center">
-      <a href="https://github.com/Chaosnap/Yohaku"><img src="./profile/pin-yohaku.svg" width="100%" alt="Yohaku" /></a>
-      <br />
-      <sub><a href="https://chaosnap.github.io/Yohaku/">Docs</a> · <a href="https://chaosnap.github.io/Yohaku/changelog/">Changelog</a> · <a href="https://github.com/Chaosnap/Yohaku/releases/latest">Download</a></sub>
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <a href="https://github.com/Chaosnap/Typewriter-Nocturne"><img width="49%" src="./profile/pin-typewriter-nocturne.svg" alt="Typewriter-Nocturne" /></a>
+  <a href="https://github.com/Chaosnap/Yohaku"><img width="49%" src="./profile/pin-yohaku.svg" alt="Yohaku" /></a>
+</p>
 
 <p align="center"><img src="./profile/divider.svg" width="100%" alt="" /></p>
 
