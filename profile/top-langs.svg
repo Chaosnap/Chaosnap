@@ -13,7 +13,7 @@
         <style>
           .header {
             font: 600 18px 'Segoe UI', Ubuntu, Sans-Serif;
-            fill: #ff652f;
+            fill: #8e3a59;
             animation: fadeInAnimation 0.8s ease-in-out forwards;
           }
           @supports(-moz-appearance: auto) {
@@ -38,7 +38,7 @@
       }
     }
     .stat {
-      font: 600 14px 'Segoe UI', Ubuntu, "Helvetica Neue", Sans-Serif; fill: #ffffff;
+      font: 600 14px 'Segoe UI', Ubuntu, "Helvetica Neue", Sans-Serif; fill: #4a3b3d;
     }
     @supports(-moz-appearance: auto) {
       /* Selector detects Firefox */
@@ -47,7 +47,7 @@
     .bold { font-weight: 700 }
     .lang-name {
       font: 400 11px "Segoe UI", Ubuntu, Sans-Serif;
-      fill: #ffffff;
+      fill: #4a3b3d;
     }
     .stagger {
       opacity: 0;
@@ -88,6 +88,13 @@
         
         <defs>
           
+          <linearGradient
+            id="gradient"
+            gradientTransform="rotate(135)"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0%" stop-color="#fffaf5" />,<stop offset="100%" stop-color="#f9ebe1" />
+          </linearGradient>
           
         </defs>
         
@@ -97,11 +104,11 @@
           class="card-bg"
           x="0.5"
           y="0.5"
-          rx="4.5"
+          rx="12"
           height="99%"
-          stroke="#0c1a25"
+          stroke="#eadbcd"
           width="299"
-          fill="#09131B"
+          fill="url(#gradient)"
           stroke-opacity="1"
         />
 
@@ -138,7 +145,7 @@
           data-testid="lang-progress"
           x="0"
           y="0"
-          width="71.86"
+          width="71.82"
           height="8"
           fill="#b2b7f8"
         />
@@ -146,9 +153,9 @@
         <rect
           mask="url(#rect-mask)"
           data-testid="lang-progress"
-          x="71.86"
+          x="71.82"
           y="0"
-          width="66.28"
+          width="66.25"
           height="8"
           fill="#f34b7d"
         />
@@ -156,9 +163,9 @@
         <rect
           mask="url(#rect-mask)"
           data-testid="lang-progress"
-          x="138.14"
+          x="138.07"
           y="0"
-          width="45.49"
+          width="45.47"
           height="8"
           fill="#adb2cb"
         />
@@ -166,9 +173,9 @@
         <rect
           mask="url(#rect-mask)"
           data-testid="lang-progress"
-          x="183.63"
+          x="183.54"
           y="0"
-          width="31.82"
+          width="31.8"
           height="8"
           fill="#3572A5"
         />
@@ -176,9 +183,9 @@
         <rect
           mask="url(#rect-mask)"
           data-testid="lang-progress"
-          x="215.45"
+          x="215.34"
           y="0"
-          width="24.22"
+          width="24.32"
           height="8"
           fill="#3178c6"
         />
@@ -186,7 +193,7 @@
         <rect
           mask="url(#rect-mask)"
           data-testid="lang-progress"
-          x="239.67"
+          x="239.66"
           y="0"
           width="10.33"
           height="8"
@@ -199,35 +206,35 @@
     <g class="stagger" style="animation-delay: 450ms">
       <circle cx="5" cy="6" r="5" fill="#b2b7f8" />
       <text data-testid="lang-name" x="15" y="10" class='lang-name'>
-        Verilog 28.74%
+        Verilog 28.73%
       </text>
     </g>
   </g><g transform="translate(0, 25)">
     <g class="stagger" style="animation-delay: 600ms">
       <circle cx="5" cy="6" r="5" fill="#f34b7d" />
       <text data-testid="lang-name" x="15" y="10" class='lang-name'>
-        C++ 26.51%
+        C++ 26.50%
       </text>
     </g>
   </g><g transform="translate(0, 50)">
     <g class="stagger" style="animation-delay: 750ms">
       <circle cx="5" cy="6" r="5" fill="#adb2cb" />
       <text data-testid="lang-name" x="15" y="10" class='lang-name'>
-        VHDL 18.20%
+        VHDL 18.19%
       </text>
     </g>
   </g></g><g transform="translate(150, 0)"><g transform="translate(0, 0)">
     <g class="stagger" style="animation-delay: 450ms">
       <circle cx="5" cy="6" r="5" fill="#3572A5" />
       <text data-testid="lang-name" x="15" y="10" class='lang-name'>
-        Python 12.73%
+        Python 12.72%
       </text>
     </g>
   </g><g transform="translate(0, 25)">
     <g class="stagger" style="animation-delay: 600ms">
       <circle cx="5" cy="6" r="5" fill="#3178c6" />
       <text data-testid="lang-name" x="15" y="10" class='lang-name'>
-        TypeScript 9.69%
+        TypeScript 9.73%
       </text>
     </g>
   </g><g transform="translate(0, 50)">
