@@ -113,9 +113,9 @@
 
 <h3 align="center">Now Playing</h3>
 
-<!-- Spotify 音乐 -->
+<!-- Spotify 音乐，左右是跟着节奏跳动的声波 -->
 <p align="center">
-  <img height="400" src="./yorushika_hitchcock_exact_effect.svg" alt="Now playing: Yorushika - Hitchcock" />
+  <img width="31%" src="./profile/wing-left.svg" alt="" /><img width="36%" src="./yorushika_hitchcock_exact_effect.svg" alt="Now playing: Yorushika - Hitchcock" /><img width="31%" src="./profile/wing-right.svg" alt="" />
 </p>
 
 <!-- just img 图片 -->
