@@ -174,8 +174,8 @@ def snake():
 
 
 if __name__ == "__main__":
-    card("stats", "能力値")
-    card("top-langs", "言語")
+    card("stats", "能力値", None, False)
+    card("top-langs", "言語", None, False)
     card("pin-typewriter-nocturne", "推し", (356, 92, 0.32, 0.5, 0.4), False)
     card("pin-yohaku", "推し", (356, 92, 0.32, 1.6, 0.4), False)
     trophy()
