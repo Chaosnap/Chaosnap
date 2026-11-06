@@ -221,34 +221,51 @@ def title(i, name, english, japanese, F):
     art.write(OUT, f"title-{name}")
 
 
-# ---------------------------------------------------------------- 分隔线
+# ---------------------------------------------------------------- 分隔线：星芒
+def glint(x, y, long, short, w, cls="", style=""):
+    """星芒：横长竖短的四道锥形光，加四道细斜光和一个亮核。光芒是渐尖的楔形，不是直线。"""
+    def ray(dx, dy, ln, wd):
+        nx, ny = -dy, dx
+        return (f"M{x + nx * wd:.2f} {y + ny * wd:.2f}L{x + dx * ln:.2f} {y + dy * ln:.2f}L{x - nx * wd:.2f} {y - ny * wd:.2f}"
+                f"L{x - dx * wd * 1.4:.2f} {y - dy * wd * 1.4:.2f}Z")
+    d = "".join(ray(dx, dy, ln, w) for dx, dy, ln in ((1, 0, long), (-1, 0, long), (0, 1, short), (0, -1, short)))
+    k = math.sqrt(0.5)
+    diag = "".join(ray(dx * k, dy * k, short * 0.45, w * 0.45) for dx, dy in ((1, 1), (1, -1), (-1, 1), (-1, -1)))
+    return (f'<g class="{cls}" style="transform-origin:{x}px {y}px;{style}"><path d="{d}" fill="{INK}" /><path d="{diag}" fill="{INK}" opacity="0.7" />'
+            f'<circle cx="{x}" cy="{y}" r="{w * 1.1:.2f}" fill="{PAPER}" stroke="{INK}" stroke-width="{w * 0.5:.2f}" /></g>')
+
+
 def divider():
-    W, H = 800, 44
+    W, H, CY = 800, 56, 28
     rng = random.Random(2)
     art = Art(W, H, role="presentation")
     art.defs.append(f'<linearGradient id="ruleL" x1="0" x2="1"><stop offset="0" stop-color="{INK}" stop-opacity="0" /><stop offset="1" stop-color="{INK}" /></linearGradient>'
-                    f'<linearGradient id="ruleR" x1="0" x2="1"><stop offset="0" stop-color="{INK}" /><stop offset="1" stop-color="{INK}" stop-opacity="0" /></linearGradient>')
-    art.ink(f'<rect x="30" y="21.5" width="340" height="1" fill="url(#ruleL)" /><rect x="430" y="21.5" width="340" height="1" fill="url(#ruleR)" />'
-            f'<rect x="30" y="25" width="340" height="0.5" fill="url(#ruleL)" opacity="0.6" /><rect x="430" y="25" width="340" height="0.5" fill="url(#ruleR)" opacity="0.6" />'
-            f'<g transform="translate(400 22)"><g class="breathe" style="animation-duration:3.2s"><path d="M0 -7C1 -10 3 -12 5 -12C9 -12 11 -6 9 0C7 6 3 10 0 13C-3 10 -7 6 -9 0C-11 -6 -9 -12 -5 -12C-3 -12 -1 -10 0 -7Z" '
-            f'transform="scale(0.8)" fill="{PAPER}" stroke="{INK}" stroke-width="1.1" /></g></g>'
-            f'{foam(rng, 7, 350, 450, 36, 44, 1.6, 3.4, (16, 34), 0.2)}'
-            f'{sparkles([(352, 22, 4, 0), (448, 22, 4, 1.6)])}')
-    runners = "".join(f'<g class="run" style="--to:{d * 330}px;animation-delay:{-k * 1.6:.1f}s"><circle cx="{400 + d * 30}" cy="22" r="2" fill="{RED}" />'
-                      f'<rect x="{400 + d * 30 - (24 if d > 0 else 0)}" y="21.4" width="24" height="1.2" fill="url(#{"trailR" if d > 0 else "trailL"})" /></g>'
+                    f'<linearGradient id="ruleR" x1="0" x2="1"><stop offset="0" stop-color="{INK}" /><stop offset="1" stop-color="{INK}" stop-opacity="0" /></linearGradient>'
+                    f'<radialGradient id="halo"><stop offset="0" stop-color="{INK}" stop-opacity="0.22" /><stop offset="1" stop-color="{INK}" stop-opacity="0" /></radialGradient>')
+    small = [(118, 0.55, 0.0), (214, 0.8, 1.1), (300, 0.5, 2.3), (500, 0.5, 0.6), (586, 0.8, 1.8), (682, 0.55, 2.9)]
+    twinkles = "".join(glint(x, CY, 16 * s, 9 * s, 1.3 * s, "tw", f"animation-delay:{-d:.2f}s") for x, s, d in small)
+    dust = "".join(f'<circle class="dust" cx="{rng.uniform(60, 740):.0f}" cy="{CY + rng.uniform(-14, 14):.0f}" r="{rng.uniform(0.5, 1.1):.2f}" fill="{INK}" '
+                   f'style="animation-delay:{-rng.uniform(0, 3.2):.2f}s" />' for _ in range(18))
+    runners = "".join(f'<g class="run" style="--to:{d * 300}px;animation-delay:{-k * 1.6:.1f}s">{glint(400 + d * 44, CY, 9, 5, 0.9)}</g>'
                       for d in (-1, 1) for k in range(2))
     art.css.append(f"""
+  .tw {{ animation: tw 3.2s {EASE} infinite; }}
+  @keyframes tw {{ 0%, 100% {{ transform: scale(0.35) rotate(0deg); opacity: 0.35; }} 50% {{ transform: scale(1) rotate(45deg); opacity: 1; }} }}
+  .main {{ animation: mainGlint 3.2s {EASE} infinite; }}
+  @keyframes mainGlint {{ 0%, 100% {{ transform: scale(0.88, 0.8); }} 50% {{ transform: scale(1.06, 1.12); }} }}
+  .mainx {{ animation: spin 19.2s linear infinite; }}
+  .dust {{ animation: dust 3.2s {EASE} infinite; }}
+  @keyframes dust {{ 0%, 100% {{ opacity: 0.1; }} 50% {{ opacity: 0.9; }} }}
   .run {{ animation: run 3.2s {EASE} infinite; }}
-  @keyframes run {{ 0% {{ transform: translateX(0); opacity: 0; }} 12% {{ opacity: 1; }} 80% {{ opacity: 0.9; }} 100% {{ transform: translateX(var(--to)); opacity: 0; }} }}
+  @keyframes run {{ 0% {{ transform: translateX(0); opacity: 0; }} 15% {{ opacity: 1; }} 80% {{ opacity: 0.9; }} 100% {{ transform: translateX(var(--to)); opacity: 0; }} }}
 """)
-    trail = (f'<linearGradient id="trailR" x1="0" x2="1"><stop offset="0" stop-color="{{c}}" stop-opacity="0" /><stop offset="1" stop-color="{{c}}" /></linearGradient>'
-             f'<linearGradient id="trailL" x1="1" x2="0"><stop offset="0" stop-color="{{c}}" stop-opacity="0" /><stop offset="1" stop-color="{{c}}" /></linearGradient>')
-    # 两条细线上方，小小的花火此起彼伏
-    spots = [(96, 22, 13, "botan"), (196, 20, 15, "kiku"), (292, 23, 11, "wa"), (508, 22, 12, "botan"), (604, 20, 15, "kiku"), (704, 23, 12, "wa")]
-    fl, fd = (festival("dv" + m[0], spots, random.Random(12), m, (3.2, 4.8), 26) for m in ("light", "dark"))
-    art.color(f'<defs>{fl[0]}</defs><g style="mix-blend-mode:multiply">{fl[1]}</g>', f'<defs>{fd[0]}</defs><g style="mix-blend-mode:screen">{fd[1]}</g>')
-    art.color(f'<defs>{trail.format(c=RED)}</defs><circle cx="400" cy="22" r="1.6" fill="{RED}" />{runners}',
-              f'<defs>{trail.format(c=NIGHT_RED)}</defs><circle cx="400" cy="22" r="1.6" fill="{NIGHT_RED}" />{runners.replace(RED, NIGHT_RED)}')
+    art.ink(f'<rect x="20" y="{CY - 0.5}" width="350" height="1" fill="url(#ruleL)" /><rect x="430" y="{CY - 0.5}" width="350" height="1" fill="url(#ruleR)" />'
+            f'<rect x="60" y="{CY + 3.5}" width="300" height="0.5" fill="url(#ruleL)" opacity="0.55" /><rect x="440" y="{CY + 3.5}" width="300" height="0.5" fill="url(#ruleR)" opacity="0.55" />'
+            f'<circle cx="400" cy="{CY}" r="26" fill="url(#halo)" class="main" style="transform-origin:400px {CY}px" />'
+            f'{dust}{twinkles}{runners}'
+            f'<g class="mainx" style="transform-origin:400px {CY}px" opacity="0.45">{glint(400, CY, 14, 14, 0.8)}</g>'
+            f'{glint(400, CY, 62, 22, 2.2, "main")}')
+    art.color(f'<circle cx="400" cy="{CY}" r="1.3" fill="{RED}" />', f'<circle cx="400" cy="{CY}" r="1.3" fill="{NIGHT_RED}" />')
     art.write(OUT, "divider")
 
 

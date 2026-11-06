@@ -684,14 +684,175 @@ def firework(uid, kind, x, y, r, scheme, dur, delay, rng, mode, rise=180):
                   f'{flash}<g class="fw" style="--droop:{r * 0.18:.0f}px;{style}">{body}</g></g>')
 
 
+# ---------------------------------------------------------------- 夏祭り花火（高精度版）
+# 每颗星沿“空气阻力 + 重力”的弹道飞：初速快、迅速减速、末端下垂；星点按球面均匀分布再投影，
+# 中心密、边缘成圆。拖尾用描边虚线沿弹道滑动（越慢越短），颜色从主色过渡到变色；
+# 内芯晚一点开，牡丹末尾噼啪闪，冠菊是长长下垂的金柳，千輪开完再散出一群小花。
+# 时间轴（占一个周期的比例）：0–13% 升空，13% 炸开，之后星的寿命按种类不同，其余时间这一发是暗的；
+# 多发错开相位，任何时刻都有在开、在落的。
+HB_LAUNCH = 0.13
+HB_TAU = [0, 0.03, 0.08, 0.16, 0.28, 0.42, 0.58, 0.76, 1.0]
+HB_TYPES = {  # 寿命（周期比例）、阻力、重力、拖尾最长、最短
+    "main": (0.44, 3.6, 0.20, 34, 3),
+    "core": (0.28, 3.2, 0.10, 18, 2),
+    "willow": (0.62, 2.6, 0.95, 60, 14),
+    "bud": (0.30, 3.8, 0.15, 10, 1.5),
+}
+
+
+def _hb_curve(k, g):
+    """代表性弹道（水平方向）的弧长比例 p(τ)，给共用的关键帧用。"""
+    pts = []
+    for i in range(41):
+        t = i / 40
+        pts.append(((1 - math.exp(-k * t)) / (1 - math.exp(-k)), g * t * t))
+    acc = [0.0]
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        acc.append(acc[-1] + math.hypot(x1 - x0, y1 - y0))
+    total = acc[-1]
+    return lambda tau: acc[min(40, round(tau * 40))] / total * 100
+
+
+def _hb_keyframes():
+    css = []
+    for name, (life, k, g, lmax, lmin) in HB_TYPES.items():
+        p = _hb_curve(k, g)
+        head, trail, fade = [], [], []
+        for tau in HB_TAU:
+            at = 100 * (HB_LAUNCH + life * tau)
+            pos = p(tau)
+            ln = min(pos, lmax * math.exp(-k * tau) + lmin)
+            op = 1 if tau < 0.45 else (0.75 if tau < 0.6 else (0.45 if tau < 0.8 else 0))
+            col = "var(--c1)" if tau < 0.4 else "var(--c2)"
+            head.append(f"{at:.2f}% {{ stroke-dasharray: 1.4 400; stroke-dashoffset: {-(pos - 1.4):.2f}; opacity: {op}; stroke: {col}; }}")
+            trail.append(f"{at:.2f}% {{ stroke-dasharray: {ln:.2f} 400; stroke-dashoffset: {-(pos - ln):.2f}; opacity: {op * 0.55:.2f}; stroke: {col}; }}")
+        b = 100 * HB_LAUNCH
+        end = 100 * (HB_LAUNCH + life)
+        for nm, frames in ((f"hh{name}", head), (f"ht{name}", trail)):
+            css.append(f"@keyframes {nm} {{ 0%, {b - 0.01:.2f}% {{ opacity: 0; stroke-dasharray: 0 400; }} {' '.join(frames)} {end + 0.01:.2f}%, 100% {{ opacity: 0; stroke-dasharray: 0 400; }} }}")
+            css.append(f".{nm} {{ fill: none; stroke-linecap: round; opacity: 0; animation: {nm} var(--t) linear infinite; animation-delay: var(--d); }}")
+    b = 100 * HB_LAUNCH
+    css.append(f"""
+  .hrk {{ opacity: 0; animation: hrk var(--t) infinite; animation-delay: var(--d); }}
+  @keyframes hrk {{ 0% {{ opacity: 0; transform: translateY(var(--up)); animation-timing-function: cubic-bezier(0.2, 0.6, 0.35, 1); }} 1% {{ opacity: 1; }}
+    {b - 0.4:.2f}% {{ opacity: 1; transform: translateY(0); }} {b:.2f}%, 100% {{ opacity: 0; transform: translateY(0); }} }}
+  .hfl {{ opacity: 0; transform-box: fill-box; transform-origin: center; animation: hfl var(--t) infinite; animation-delay: var(--d); }}
+  @keyframes hfl {{ 0%, {b - 0.01:.2f}% {{ opacity: 0; transform: scale(0.3); }} {b + 0.5:.2f}% {{ opacity: 0.85; transform: scale(1); animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1); }}
+    {b + 6:.2f}% {{ opacity: 0; transform: scale(1.7); }} 100% {{ opacity: 0; }} }}
+  .hck {{ opacity: 0; animation: hck var(--t) infinite; animation-delay: calc(var(--d) + var(--o)); }}
+  @keyframes hck {{ 0%, {b + 20:.2f}% {{ opacity: 0; }} {b + 20.6:.2f}% {{ opacity: 1; }} {b + 21.8:.2f}% {{ opacity: 0.1; }} {b + 22.6:.2f}% {{ opacity: 0.9; }} {b + 24:.2f}%, 100% {{ opacity: 0; }} }}
+""")
+    return "\n".join(css)
+
+
+def _sphere(n, rng):
+    """球面均匀分布（斐波那契），随机转一下，返回投影后的 (x, y)。"""
+    out = []
+    ga = math.pi * (3 - math.sqrt(5))
+    rx, ry = rng.uniform(0, math.pi), rng.uniform(0, math.pi)
+    for i in range(n):
+        z = 1 - 2 * (i + 0.5) / n
+        r = math.sqrt(1 - z * z)
+        x, y = math.cos(ga * i) * r, math.sin(ga * i) * r
+        y, z = y * math.cos(rx) - z * math.sin(rx), y * math.sin(rx) + z * math.cos(rx)
+        x, z = x * math.cos(ry) + z * math.sin(ry), -x * math.sin(ry) + z * math.cos(ry)
+        out.append((x, y))
+    return out
+
+
+def _trajectory(dx, dy, R, k, g):
+    pts = []
+    for i in range(13):
+        t = i / 12
+        d = (1 - math.exp(-k * t)) / (1 - math.exp(-k))
+        pts.append((dx * R * d, dy * R * d + g * R * t * t))
+    return smooth(pts)
+
+
+def _stars(dirs, R, typ, head_w, trail=True, jitter=None):
+    life, k, g, _, _ = HB_TYPES[typ]
+    out = []
+    for dx, dy in dirs:
+        s = jitter.uniform(0.93, 1.05) if jitter else 1.0
+        d = _trajectory(dx * s, dy * s, R, k, g)
+        if trail:
+            out.append(f'<path class="ht{typ}" d="{d}" pathLength="100" stroke-width="{head_w * 0.42:.2f}" />')
+        out.append(f'<path class="hh{typ}" d="{d}" pathLength="100" stroke-width="{head_w:.2f}" />')
+    return "".join(out)
+
+
+def hanabi(uid, kind, x, y, R, scheme, T, delay, rng, mode, rise=180):
+    """一发花火。kind：kiku 菊（拖尾+芯）、botan 牡丹（光点+末尾噼啪）、kamuro 冠菊（金柳）、
+    wa 輪（倾斜的环）、senrin 千輪（开完再散出小花）、jelly 水母型。"""
+    pal = FW_DAY if mode == "light" else FW_NIGHT
+    c1, c2, c3 = (pal[c] for c in scheme)
+    if kind == "kamuro":
+        c1 = c2 = pal["gold"]
+    hw = max(1.3, min(2.8, R / 22))
+    n = 52 if R >= 50 else (40 if R >= 30 else 26)
+    parts = []
+    if kind in ("kiku", "botan", "senrin"):
+        dirs = _sphere(n if kind != "senrin" else n // 2, rng)
+        RR = R if kind != "senrin" else R * 0.6
+        parts.append(_stars(dirs, RR, "main", hw, trail=kind == "kiku", jitter=rng))
+        parts.append(f'<g style="--c1:{c3};--c2:{c3}">{_stars(_sphere(max(8, n // 3), rng), R * 0.42, "core", hw * 0.9, trail=kind == "kiku", jitter=rng)}</g>')
+        if kind == "botan":
+            for dx, dy in dirs[::2]:
+                life, k, g, _, _ = HB_TYPES["main"]
+                px, py = dx * R * 0.97, dy * R * 0.97 + g * R * 0.36
+                parts.append(f'<circle class="hck" cx="{px:.1f}" cy="{py:.1f}" r="{hw * 0.55:.2f}" fill="{c2}" style="--o:{rng.uniform(0, 0.5):.2f}s" />')
+        if kind == "senrin":
+            for j in range(7):
+                a = 2 * math.pi * j / 7 + rng.uniform(-0.2, 0.2)
+                sx, sy = math.cos(a) * R * 0.72, math.sin(a) * R * 0.72 + R * 0.08
+                sub = _stars(_sphere(12, rng), R * 0.24, "bud", hw * 0.75, trail=False)
+                parts.append(f'<g transform="translate({sx:.1f} {sy:.1f})" style="--d:calc(var(--d0) + {T * 0.12:.2f}s);--c1:{c2};--c2:{c3}">{sub}</g>')
+    elif kind == "kamuro":
+        dirs = _sphere(n, rng)
+        parts.append(_stars(dirs, R * 0.85, "willow", hw * 0.8, trail=True, jitter=rng))
+        for dx, dy in dirs[::3]:
+            for f in (0.55, 0.8):
+                life, k, g, _, _ = HB_TYPES["willow"]
+                d = (1 - math.exp(-k * f)) / (1 - math.exp(-k))
+                px, py = dx * R * 0.85 * d, dy * R * 0.85 * d + g * R * 0.85 * f * f
+                parts.append(f'<circle class="hck" cx="{px:.1f}" cy="{py:.1f}" r="{hw * 0.4:.2f}" fill="{c1}" style="--o:{rng.uniform(0.2, 1.4):.2f}s" />')
+    elif kind == "wa":
+        tilt, rot = rng.uniform(0.25, 0.5), rng.uniform(0, math.pi)
+        dirs = []
+        for j in range(n):
+            a = 2 * math.pi * j / n
+            px, py = math.cos(a), math.sin(a) * tilt
+            dirs.append((px * math.cos(rot) - py * math.sin(rot), px * math.sin(rot) + py * math.cos(rot)))
+        parts.append(_stars(dirs, R, "main", hw, trail=True))
+        parts.append(f'<g style="--c1:{c3};--c2:{c3}">{_stars(_sphere(10, rng), R * 0.3, "core", hw * 0.9, trail=False)}</g>')
+    else:  # jelly：水母的伞和触手
+        pts = [(math.cos(math.pi + math.pi * j / 15) * 0.85, math.sin(math.pi + math.pi * j / 15) * 0.62) for j in range(16)]
+        pts += [(-0.8 + 1.6 * j / 9, 0.02) for j in range(10)]
+        for j, x0 in enumerate((-0.5, -0.17, 0.17, 0.5)):
+            pts += [(x0 + math.sin(t * 0.9 + j) * 0.06, 0.12 + t * 0.14) for t in range(1, 7)]
+        parts.append(_stars(pts, R, "core", hw, trail=True))
+    T_str = f"{T:.2f}s"
+    trail_grad = (f'<linearGradient id="hg{uid}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="26"><stop offset="0" stop-color="{c3}" />'
+                  f'<stop offset="1" stop-color="{c3}" stop-opacity="0" /></linearGradient>'
+                  f'<radialGradient id="hf{uid}"><stop offset="0" stop-color="{c3}" stop-opacity="0.9" /><stop offset="0.35" stop-color="{c1}" stop-opacity="0.35" />'
+                  f'<stop offset="1" stop-color="{c1}" stop-opacity="0" /></radialGradient>')
+    sparks = "".join(f'<circle cx="{rng.uniform(-1.5, 1.5):.1f}" cy="{6 + 5 * j}" r="{0.9 - 0.15 * j:.2f}" fill="{c3}" opacity="{0.8 - 0.18 * j:.2f}" />' for j in range(4))
+    rocket = (f'<g class="hrk" style="--up:{rise}px"><rect x="-0.8" y="0" width="1.6" height="26" rx="0.8" fill="url(#hg{uid})" />'
+              f'<circle r="1.7" fill="{c3}" />{sparks}</g>')
+    flash = f'<circle class="hfl" r="{R * 0.42:.1f}" fill="url(#hf{uid})" />'
+    body = (f'<g transform="translate({x:.0f} {y:.0f})" style="--t:{T_str};--d:{-delay:.2f}s;--d0:{-delay:.2f}s;--c1:{c1};--c2:{c2}">'
+            f'{rocket}{flash}{"".join(parts)}</g>')
+    return trail_grad, body
+
+
 def festival(prefix, spots, rng, mode, period=(5.2, 7.4), rise=180):
     """一组花火：周期不同、相位错开，任何时刻都有在开的和在谢的。spots: [(x, y, r, kind)]"""
     defs, body = [], []
     n = len(spots)
     for i, (x, y, r, kind) in enumerate(spots):
-        dur = rng.uniform(*period)
-        delay = dur * i / n + rng.uniform(0, 0.4)
-        d, b = firework(f"{prefix}{i}", kind, x, y, r, SCHEMES[(i * 3 + len(prefix)) % len(SCHEMES)], dur, delay, rng, mode, rise)
+        T = rng.uniform(*period)
+        delay = T * i / n + rng.uniform(0, 0.4)
+        d, b = hanabi(f"{prefix}{i}", kind, x, y, r, SCHEMES[(i * 3 + len(prefix)) % len(SCHEMES)], T, delay, rng, mode, rise)
         defs.append(d)
         body.append(b)
     return "".join(defs), "".join(body)
@@ -932,6 +1093,6 @@ SCENE_CSS = f"""
   @keyframes burst {{ from {{ transform: rotate(-4deg) scale(0.97); }} to {{ transform: rotate(3deg) scale(1.04); }} }}
 """
 
-BASE_CSS = BASE_CSS + EXTRA_CSS + TITLE_CSS + SCENE_CSS
+BASE_CSS = BASE_CSS + EXTRA_CSS + TITLE_CSS + SCENE_CSS + _hb_keyframes()
 DEFS = DEFS + (f'<linearGradient id="streak" gradientUnits="userSpaceOnUse" x1="0" y1="-46" x2="0" y2="-12"><stop offset="0" stop-color="{INK}" stop-opacity="0" />'
                f'<stop offset="1" stop-color="{INK}" stop-opacity="0.7" /></linearGradient>')
