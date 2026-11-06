@@ -17,8 +17,8 @@ on:
       - .github/scripts/**
 
 env:
-  # 亮色卡片的配色，取自 Background.jpg 的奶油色和玫瑰色
-  CARD_COLORS: "title_color=8e3a59&text_color=4a3b3d&icon_color=c96f7f&bg_color=135,fffaf5,f9ebe1&border_color=eadbcd&border_radius=12"
+  # 卡片按纸白墨黑生成，decorate.py 再去色并做出深色版
+  CARD_COLORS: "title_color=15171d&text_color=15171d&icon_color=15171d&bg_color=f3f1ee&border_color=15171d&border_radius=6"
 
 jobs:
   build:
@@ -36,7 +36,7 @@ jobs:
         uses: stats-organization/github-readme-stats-action@v2
         with:
           card: stats
-          options: "username=${{ github.repository_owner }}&show_icons=true&hide=prs&ring_color=8e3a59&${{ env.CARD_COLORS }}"
+          options: "username=${{ github.repository_owner }}&show_icons=true&hide=prs&ring_color=15171d&${{ env.CARD_COLORS }}"
           path: profile/stats.svg
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -95,19 +95,19 @@ jobs:
       - name: Download activity graph
         continue-on-error: true
         run: |
-          curl -fsSL --retry 3 -o profile/activity.svg.tmp "https://github-readme-activity-graph-inky.vercel.app/graph?username=${{ github.repository_owner }}&bg_color=fdf6ef&color=4a3b3d&line=c96f7f&point=8e3a59&area=true&area_color=e8b4b8&title_color=8e3a59&hide_border=true&radius=12&custom_title=Activity%20Graph"
+          curl -fsSL --retry 3 -o profile/activity.svg.tmp "https://github-readme-activity-graph-inky.vercel.app/graph?username=${{ github.repository_owner }}&bg_color=f3f1ee&color=15171d&line=15171d&point=15171d&area=true&area_color=d8d6d1&title_color=15171d&hide_border=true&radius=6&custom_title=Activity%20Graph"
           mv profile/activity.svg.tmp profile/activity.svg
 
-      # 贪吃蛇：亮色格子，玫瑰色从浅到深，蛇是墨色
+      # 贪吃蛇：灰阶格子，蛇是墨色
       - name: Generate contribution snake
         continue-on-error: true
         uses: Platane/snk/svg-only@v3
         with:
           github_user_name: ${{ github.repository_owner }}
           outputs: |
-            profile/snake-raw.svg?color_snake=#4a3b3d&color_dots=#efe2d8,#f2c9c4,#e39aa6,#c96f7f,#8e3a59
+            profile/snake-raw.svg?color_snake=#15171d&color_dots=#e4e1db,#c9c6bf,#9a978f,#5d5b56,#15171d
 
-      # 给卡片加流光边框和扫光，活动图加折线动画，贪吃蛇包进卡片
+      # 改成黑白漫画风并做出浅色 / 深色两版，活动图加折线动画，贪吃蛇包进一格漫画
       - name: Decorate cards
         run: python3 .github/scripts/decorate.py
 

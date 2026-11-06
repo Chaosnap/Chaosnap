@@ -1,5 +1,5 @@
 // 生成 GitHub 奖杯 SVG，由 PersonalStatus.yml 复制到 github-profile-trophy 的
-// 代码目录里运行。上游自带的 render_svg.ts 选项是写死的，这里配上主页的颜色。
+// 代码目录里运行。上游自带的 render_svg.ts 选项是写死的，这里配上主页的颜色（纸白墨黑，深色版由 decorate.py 反相）。
 import { GithubApiService } from "./src/Services/GithubApiService.ts";
 import { Card } from "./src/card.ts";
 import { COLORS, Theme } from "./src/theme.ts";
@@ -8,12 +8,12 @@ const [username, outputPath] = Deno.args;
 
 const theme: Theme = {
   ...COLORS.default,
-  BACKGROUND: "#FDF6EF",
-  TITLE: "#8E3A59",
-  ICON_CIRCLE: "#F6E3D8",
-  TEXT: "#6F5B58",
-  LAUREL: "#C96F7F",
-  NEXT_RANK_BAR: "#C96F7F",
+  BACKGROUND: "#F3F1EE",
+  TITLE: "#15171D",
+  ICON_CIRCLE: "#E4E1DB",
+  TEXT: "#15171D",
+  LAUREL: "#8B8D95",
+  NEXT_RANK_BAR: "#15171D",
 };
 
 const userInfo = await new GithubApiService().requestUserInfo(username);
