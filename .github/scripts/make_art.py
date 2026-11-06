@@ -123,9 +123,9 @@ def wave_paths(top, flip=False):
 def bg_gradient():
     return f"""
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="0.3">
-      <stop offset="0" stop-color="#f4c6c3"><animate attributeName="stop-color" dur="10s" repeatCount="indefinite" values="#f4c6c3;#e8a0a8;#f4c6c3" /></stop>
-      <stop offset="0.5" stop-color="#d9798a"><animate attributeName="stop-color" dur="10s" repeatCount="indefinite" values="#d9798a;#b85a76;#d9798a" /></stop>
-      <stop offset="1" stop-color="#8e3a59"><animate attributeName="stop-color" dur="10s" repeatCount="indefinite" values="#8e3a59;#6e2c48;#8e3a59" /></stop>
+      <stop offset="0" stop-color="#f6cfcc"><animate attributeName="stop-color" dur="10s" repeatCount="indefinite" values="#f6cfcc;#f2b8bd;#f6cfcc" /></stop>
+      <stop offset="0.5" stop-color="#d9798a"><animate attributeName="stop-color" dur="10s" repeatCount="indefinite" values="#d9798a;#e38c9b;#d9798a" /></stop>
+      <stop offset="1" stop-color="#9c4563"><animate attributeName="stop-color" dur="10s" repeatCount="indefinite" values="#9c4563;#b0566f;#9c4563" /></stop>
     </linearGradient>"""
 
 
@@ -142,6 +142,21 @@ def kana_rain(rng, width, height, clip):
     return f'<g clip-path="url(#{clip})">' + "".join(cols) + "</g>"
 
 
+PROMPT = "> I am Yuki"
+CHAR_W = 18.1  # 30px 等宽字体每个字符的宽度
+TYPE_X = round(600 - len(PROMPT) * CHAR_W / 2)
+
+
+def type_anim(attr, base):
+    """逐字打出、停留、再逐字删掉；剪裁宽度和光标位置用同一组关键帧。"""
+    n = len(PROMPT)
+    steps = list(range(n + 1)) + [n] + list(range(n, -1, -1))
+    times = [0.4 * i / n for i in range(n + 1)] + [0.85] + [0.85 + 0.13 * i / n for i in range(n + 1)]
+    values = ";".join(f"{base + k * CHAR_W + (6 if attr == 'width' and k else 0):.1f}" for k in steps)
+    key = ";".join(f"{t:.3f}" for t in times)
+    return f'<animate attributeName="{attr}" dur="8s" repeatCount="indefinite" calcMode="discrete" values="{values}" keyTimes="{key}" />'
+
+
 def header():
     rng = random.Random(3)
     return f"""<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-label="Hi there, I am Yuki">
@@ -151,8 +166,6 @@ def header():
     .jp {{ font: 400 19px {JP}; letter-spacing: 9px; fill: {CREAM}; opacity: 0; animation: fadein 1.6s 2.6s ease-out forwards; }}
     .rain {{ font: 500 15px {MONO}; fill: {CREAM}; opacity: 0.16; animation: rain linear infinite; }}
     @keyframes rain {{ from {{ transform: translateY(-40px); }} to {{ transform: translateY(330px); }} }}
-    .typed {{ animation: type 7s steps(14) infinite; }}
-    @keyframes type {{ 0% {{ width: 0; }} 40%, 85% {{ width: 300px; }} 100% {{ width: 0; }} }}
     .cursor {{ fill: {CREAM}; animation: blink 0.9s steps(1) infinite; }}
     @keyframes blink {{ 50% {{ opacity: 0; }} }}
     .scan {{ fill: url(#scanGrad); animation: scan 4.5s linear infinite; }}
@@ -168,15 +181,15 @@ def header():
       <stop offset="0" stop-color="#fff" stop-opacity="0" /><stop offset="0.5" stop-color="#fff" stop-opacity="0.22" /><stop offset="1" stop-color="#fff" stop-opacity="0" />
     </linearGradient>
     <clipPath id="shape"><path d="M0 0H1200V210C1000 255 800 170 600 210S200 255 0 210Z" /></clipPath>
-    <clipPath id="typedClip"><rect class="typed" x="436" y="146" width="300" height="44" /></clipPath>
+    <clipPath id="typedClip"><rect x="{TYPE_X - 4}" y="146" width="0" height="44">{type_anim("width", 0)}</rect></clipPath>
   </defs>
   {wave_paths(210)}
   {kana_rain(rng, 1200, 300, "shape")}
   <g clip-path="url(#shape)"><rect class="scan" x="0" y="0" width="1200" height="40" /></g>
   {sparks([(150, 46, 17, 0), (285, 132, 11, 1.2), (92, 150, 8, 2.4), (1052, 40, 17, 0.6), (925, 138, 11, 1.8), (1120, 150, 8, 3)], CREAM)}
   {glitch(600, 116, "HI THERE", "title", "url(#title)")}
-  <g clip-path="url(#typedClip)"><text class="prompt" x="440" y="178">&gt; I am Yuki</text></g>
-  <rect class="cursor" x="746" y="152" width="15" height="31" />
+  <g clip-path="url(#typedClip)"><text class="prompt" x="{TYPE_X}" y="178">&gt; I am Yuki</text></g>
+  <rect class="cursor" x="{TYPE_X}" y="152" width="15" height="31">{type_anim("x", TYPE_X + 2)}</rect>
   <text class="jp" x="600" y="210" text-anchor="middle">ようこそ、僕の世界線へ</text>
   {petals(rng, 12, 1200, 300)}
 </svg>

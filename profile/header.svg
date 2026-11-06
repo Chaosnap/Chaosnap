@@ -44,8 +44,6 @@
     .jp { font: 400 19px 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif CJK JP', 'Noto Serif JP', serif; letter-spacing: 9px; fill: #fff7f0; opacity: 0; animation: fadein 1.6s 2.6s ease-out forwards; }
     .rain { font: 500 15px 'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Hiragino Sans', 'Yu Gothic', monospace; fill: #fff7f0; opacity: 0.16; animation: rain linear infinite; }
     @keyframes rain { from { transform: translateY(-40px); } to { transform: translateY(330px); } }
-    .typed { animation: type 7s steps(14) infinite; }
-    @keyframes type { 0% { width: 0; } 40%, 85% { width: 300px; } 100% { width: 0; } }
     .cursor { fill: #fff7f0; animation: blink 0.9s steps(1) infinite; }
     @keyframes blink { 50% { opacity: 0; } }
     .scan { fill: url(#scanGrad); animation: scan 4.5s linear infinite; }
@@ -54,9 +52,9 @@
   </style>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="0.3">
-      <stop offset="0" stop-color="#f4c6c3"><animate attributeName="stop-color" dur="10s" repeatCount="indefinite" values="#f4c6c3;#e8a0a8;#f4c6c3" /></stop>
-      <stop offset="0.5" stop-color="#d9798a"><animate attributeName="stop-color" dur="10s" repeatCount="indefinite" values="#d9798a;#b85a76;#d9798a" /></stop>
-      <stop offset="1" stop-color="#8e3a59"><animate attributeName="stop-color" dur="10s" repeatCount="indefinite" values="#8e3a59;#6e2c48;#8e3a59" /></stop>
+      <stop offset="0" stop-color="#f6cfcc"><animate attributeName="stop-color" dur="10s" repeatCount="indefinite" values="#f6cfcc;#f2b8bd;#f6cfcc" /></stop>
+      <stop offset="0.5" stop-color="#d9798a"><animate attributeName="stop-color" dur="10s" repeatCount="indefinite" values="#d9798a;#e38c9b;#d9798a" /></stop>
+      <stop offset="1" stop-color="#9c4563"><animate attributeName="stop-color" dur="10s" repeatCount="indefinite" values="#9c4563;#b0566f;#9c4563" /></stop>
     </linearGradient>
     <linearGradient id="petalA" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#ffe3e8" /><stop offset="1" stop-color="#f2a7b6" />
@@ -72,7 +70,7 @@
       <stop offset="0" stop-color="#fff" stop-opacity="0" /><stop offset="0.5" stop-color="#fff" stop-opacity="0.22" /><stop offset="1" stop-color="#fff" stop-opacity="0" />
     </linearGradient>
     <clipPath id="shape"><path d="M0 0H1200V210C1000 255 800 170 600 210S200 255 0 210Z" /></clipPath>
-    <clipPath id="typedClip"><rect class="typed" x="436" y="146" width="300" height="44" /></clipPath>
+    <clipPath id="typedClip"><rect x="496" y="146" width="0" height="44"><animate attributeName="width" dur="8s" repeatCount="indefinite" calcMode="discrete" values="0.0;24.1;42.2;60.3;78.4;96.5;114.6;132.7;150.8;168.9;187.0;205.1;205.1;205.1;187.0;168.9;150.8;132.7;114.6;96.5;78.4;60.3;42.2;24.1;0.0" keyTimes="0.000;0.036;0.073;0.109;0.145;0.182;0.218;0.255;0.291;0.327;0.364;0.400;0.850;0.850;0.862;0.874;0.885;0.897;0.909;0.921;0.933;0.945;0.956;0.968;0.980" /></rect></clipPath>
   </defs>
   <path fill="url(#bg)" opacity="0.35" d="M0 0H1200V250C1000 210 800 290 600 250S200 210 0 250Z"><animate attributeName="d" dur="16s" repeatCount="indefinite" values="M0 0H1200V250C1000 210 800 290 600 250S200 210 0 250Z;M0 0H1200V232.0C1000 277.0 800 192.0 600 232.0S200 277.0 0 232.0Z;M0 0H1200V250C1000 210 800 290 600 250S200 210 0 250Z"/></path>
   <path fill="url(#bg)" d="M0 0H1200V210C1000 255 800 170 600 210S200 255 0 210Z"><animate attributeName="d" dur="12s" repeatCount="indefinite" values="M0 0H1200V210C1000 255 800 170 600 210S200 255 0 210Z;M0 0H1200V224C1000 184 800 262 600 224S200 184 0 224Z;M0 0H1200V210C1000 255 800 170 600 210S200 255 0 210Z"/></path>
@@ -85,8 +83,8 @@
   <path class="spark" fill="#fff7f0" d="M925 127C926.32 136.68 926.32 136.68 936 138C926.32 139.32 926.32 139.32 925 149C923.68 139.32 923.68 139.32 914 138C923.68 136.68 923.68 136.68 925 127Z" style="animation-delay:1.8s"/>
   <path class="spark" fill="#fff7f0" d="M1120 142C1120.96 149.04 1120.96 149.04 1128 150C1120.96 150.96 1120.96 150.96 1120 158C1119.04 150.96 1119.04 150.96 1112 150C1119.04 149.04 1119.04 149.04 1120 142Z" style="animation-delay:3s"/>
   <g><text class="title gl-c" x="600" y="116" text-anchor="middle">HI THERE</text><text class="title gl-m" x="600" y="116" text-anchor="middle">HI THERE</text><text class="title shake" x="600" y="116" text-anchor="middle" fill="url(#title)">HI THERE</text></g>
-  <g clip-path="url(#typedClip)"><text class="prompt" x="440" y="178">&gt; I am Yuki</text></g>
-  <rect class="cursor" x="746" y="152" width="15" height="31" />
+  <g clip-path="url(#typedClip)"><text class="prompt" x="500" y="178">&gt; I am Yuki</text></g>
+  <rect class="cursor" x="500" y="152" width="15" height="31"><animate attributeName="x" dur="8s" repeatCount="indefinite" calcMode="discrete" values="502.0;520.1;538.2;556.3;574.4;592.5;610.6;628.7;646.8;664.9;683.0;701.1;701.1;701.1;683.0;664.9;646.8;628.7;610.6;592.5;574.4;556.3;538.2;520.1;502.0" keyTimes="0.000;0.036;0.073;0.109;0.145;0.182;0.218;0.255;0.291;0.327;0.364;0.400;0.850;0.850;0.862;0.874;0.885;0.897;0.909;0.921;0.933;0.945;0.956;0.968;0.980" /></rect>
   <text class="jp" x="600" y="210" text-anchor="middle">ようこそ、僕の世界線へ</text>
   <g transform="translate(910 -20) scale(1.17)"><path class="petal" d="M0 0C5-7 15-7 18 0C15 6 6 8 0 0Z" fill="url(#petalA)" style="animation-duration:12.1s;animation-delay:-3.2s;--dx:-41px;--dy:360px"/></g>
   <g transform="translate(1166 -20) scale(1.00)"><path class="petal" d="M0 0C5-7 15-7 18 0C15 6 6 8 0 0Z" fill="url(#petalB)" style="animation-duration:11.1s;animation-delay:-1.5s;--dx:58px;--dy:360px"/></g>
