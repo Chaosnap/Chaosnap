@@ -9,7 +9,7 @@
         aria-labelledby="descId"
       >
         <title id="titleId">Yuki&#39;s GitHub Stats, Rank: B</title>
-        <desc id="descId">Total Stars Earned: 137, Total Commits  (last year) : 313, Total Issues: 5, Contributed to (last year): 3</desc>
+        <desc id="descId">Total Stars Earned: 137, Total Commits  (last year) : 314, Total Issues: 5, Contributed to (last year): 3</desc>
         <style>
           .header {
             font: 600 18px 'Segoe UI', Ubuntu, Sans-Serif;
@@ -73,7 +73,7 @@
         stroke-dashoffset: 251.32741228718345;
       }
       to {
-        stroke-dashoffset: 132.33511094409346;
+        stroke-dashoffset: 132.2864161441175;
       }
     }
   
@@ -191,7 +191,7 @@
         x="224.01"
         y="12.5"
         data-testid="commits"
-      >313</text>
+      >314</text>
     </g>
   </g><g transform="translate(0, 50)">
     <g class="stagger" style="animation-delay: 750ms" transform="translate(25, 0)">
@@ -227,5 +227,33 @@
     </svg>
   
         </g>
-      </svg>
+      <!-- decorated -->
+<defs>
+  <linearGradient id="zzGlow" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="467.0" y2="170.0">
+    <stop offset="0" stop-color="#c96f7f" stop-opacity="0.15" />
+    <stop offset="0.42" stop-color="#c96f7f" stop-opacity="0.15" />
+    <stop offset="0.5" stop-color="#e8a0a8" />
+    <stop offset="0.58" stop-color="#8e3a59" stop-opacity="0.15" />
+    <stop offset="1" stop-color="#c96f7f" stop-opacity="0.15" />
+    <animateTransform attributeName="gradientTransform" type="rotate" values="0 233.5 85.0;360 233.5 85.0" dur="6s" repeatCount="indefinite" />
+  </linearGradient>
+  <linearGradient id="zzSheen" x1="0" x2="1">
+    <stop offset="0" stop-color="#ffffff" stop-opacity="0" />
+    <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.55" />
+    <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+  </linearGradient>
+  <clipPath id="zzClip"><rect x="0.5" y="0.5" width="466.0" height="169.0" rx="12" /></clipPath>
+</defs>
+<style>
+  .zz-sheen { animation: zzSheen 6.5s ease-in-out infinite; }
+  @keyframes zzSheen {
+    0%, 60% { transform: translateX(-210px) skewX(-20deg); }
+    100% { transform: translateX(607px) skewX(-20deg); }
+  }
+</style>
+<g pointer-events="none">
+  <g clip-path="url(#zzClip)"><rect class="zz-sheen" x="0" y="-34" width="84" height="238" fill="url(#zzSheen)" /></g>
+  <rect x="1" y="1" width="465.0" height="168.0" rx="12" fill="none" stroke="url(#zzGlow)" stroke-width="2" />
+</g>
+</svg>
     

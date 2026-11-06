@@ -250,5 +250,33 @@
     </svg>
   
         </g>
-      </svg>
+      <!-- decorated -->
+<defs>
+  <linearGradient id="zzGlow" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="300.0" y2="165.0">
+    <stop offset="0" stop-color="#c96f7f" stop-opacity="0.15" />
+    <stop offset="0.42" stop-color="#c96f7f" stop-opacity="0.15" />
+    <stop offset="0.5" stop-color="#e8a0a8" />
+    <stop offset="0.58" stop-color="#8e3a59" stop-opacity="0.15" />
+    <stop offset="1" stop-color="#c96f7f" stop-opacity="0.15" />
+    <animateTransform attributeName="gradientTransform" type="rotate" values="0 150.0 82.5;360 150.0 82.5" dur="6s" repeatCount="indefinite" />
+  </linearGradient>
+  <linearGradient id="zzSheen" x1="0" x2="1">
+    <stop offset="0" stop-color="#ffffff" stop-opacity="0" />
+    <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.55" />
+    <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+  </linearGradient>
+  <clipPath id="zzClip"><rect x="0.5" y="0.5" width="299.0" height="164.0" rx="12" /></clipPath>
+</defs>
+<style>
+  .zz-sheen { animation: zzSheen 6.5s ease-in-out infinite; }
+  @keyframes zzSheen {
+    0%, 60% { transform: translateX(-135px) skewX(-20deg); }
+    100% { transform: translateX(390px) skewX(-20deg); }
+  }
+</style>
+<g pointer-events="none">
+  <g clip-path="url(#zzClip)"><rect class="zz-sheen" x="0" y="-33" width="54" height="231" fill="url(#zzSheen)" /></g>
+  <rect x="1" y="1" width="298.0" height="163.0" rx="12" fill="none" stroke="url(#zzGlow)" stroke-width="2" />
+</g>
+</svg>
     
