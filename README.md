@@ -87,8 +87,5 @@
   <img src="https://cdn.jsdelivr.net/gh/sun0225SUN/sun0225SUN/assets/images/github.webp" width="72" alt="github" />
 </p>
 
-<!-- just img 图片-->
-<p align="center"><img src="https://cdn.jsdelivr.net/gh/sun0225SUN/sun0225SUN/assets/images/icon.png" width="100%" alt="Tech collage" /></p>
-<!-- just img 图片 -->
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/footer-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/footer-light.svg" width="100%" alt="The end" /></picture></p>

@@ -14,7 +14,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from manga import (BASE_CSS, DEFS, EASE, EASE_OUT, INK, MINCHO, MINCHO_STACK, NIGHT_RED, PAPER, RED, SERIF, SERIF_STACK,  # noqa: E402
-                   chime, film_strip, foam, jellyfish, letters, load_font, petals, sheen_grad, sparkles, stamp, title_fx, to_night)
+                   chime, festival, film_strip, foam, jellyfish, letters, load_font, petals, sheen_grad, sparkles, stamp, title_fx, to_night)
 
 PROFILE = pathlib.Path(__file__).resolve().parents[2] / "profile"
 SANS_CSS = re.compile(r"""(['"])Segoe UI\1,\s*Ubuntu,(\s*"Helvetica Neue",)?\s*Sans-Serif""")
@@ -168,7 +168,7 @@ def manga_overlay(w, h, seed, jelly=None, foam_bottom=True, extra=""):
             f'{sparkles([(w - 26, 24, 5, 0), (w - 48, 40, 3.5, 1.2), (14, h - 16, 4, 2.2)])}</g>')
 
 
-def write_pair(name, root, body, overlay, accent, extra_css="", faces=(), under=""):
+def write_pair(name, root, body, overlay, accent, extra_css="", faces=(), under="", color=("", "")):
     """外部生成的卡片本体套滤镜（浅色去色，深色去色后反相）；自己画的底层、装饰和红章直接按模式换色，不进滤镜。"""
     own_css = BASE_CSS + KIRA_CSS + (JP.css() if JP else "") + extra_css
     font_css = "".join(f.css() for f in faces)
@@ -177,7 +177,7 @@ def write_pair(name, root, body, overlay, accent, extra_css="", faces=(), under=
         defs = conv(DEFS + BAND.replace("__BAND__", "0.8" if mode == "light" else "0.13"))
         acc = accent if mode == "light" else accent.replace(RED, NIGHT_RED)
         out = (f"{root}<style>{font_css}{conv(own_css)}</style><defs>{defs}</defs>{conv(under)}"
-               f"<g filter=\"url(#{flt})\">{body}</g>{conv(overlay) if mode == 'light' else to_night(overlay).replace(RED, NIGHT_RED)}{acc}</svg>\n")
+               f"<g filter=\"url(#{flt})\">{body}</g>{color[0] if mode == 'light' else color[1]}{conv(overlay) if mode == 'light' else to_night(overlay).replace(RED, NIGHT_RED)}{acc}</svg>\n")
         (PROFILE / f"{name}-{mode}.svg").write_text(out, encoding="utf-8")
     print("wrote", name, "light/dark")
 
@@ -298,14 +298,24 @@ def activity():
                  f'{"".join(rings)}'
                  f'<g><circle r="9" fill="none" stroke="{RED}" stroke-width="1" opacity="0.5">{motion}</circle><circle r="5" fill="{PAPER}" stroke="{RED}" stroke-width="2.2">{motion}</circle></g>')
     css = f"""
-  .acomet {{ stroke-dasharray: 90 910; animation: acomet linear infinite; }}
+  .ct-line {{ animation: none !important; stroke-dashoffset: 0 !important; stroke-dasharray: none !important; }}
+  .ct-point {{ animation: none !important; }}
+  .acomet {{ stroke-dasharray: 90 1910; animation: acomet linear infinite; }}
   .acomet.halo {{ opacity: 0.9; }}
   @keyframes acomet {{ from {{ stroke-dashoffset: 90; }} to {{ stroke-dashoffset: -910; }} }}
   @keyframes ripOnce {{ 0% {{ opacity: 0; transform: scale(1); }} 1% {{ opacity: 0.9; }} 14%, 100% {{ opacity: 0; transform: scale(var(--s, 2.4)); }} }}
   .kira1 {{ animation-name: kiraOnce !important; }}
   @keyframes kiraOnce {{ 0% {{ opacity: 0; transform: scale(0.2); }} 2% {{ opacity: 1; }} 16%, 100% {{ opacity: 0; transform: scale(1) rotate(12deg); }} }}
 """
-    write_pair("activity", root, body, manga_overlay(w, h, 7, (w - 70, 54, 0.55, 0.8, 0.6), extra=extra), stamp(40, 22, 86, 26, "活動記録", 14), css, faces)
+    # 图表上方空着的地方放夏祭り的花火（在折线下面，浅色用白天的墨色系，深色用夜里的亮色系）
+    spots = [(240, 128, 52, "kiku"), (405, 96, 36, "botan"), (648, 112, 34, "wa"), (822, 118, 42, "botan"),
+             (1040, 126, 50, "kamuro"), (300, 220, 30, "wa"), (760, 214, 28, "kiku"), (1150, 214, 30, "jelly")]
+    fl = festival("al", spots, random.Random(8), "light", (4.8, 6.4), 140)
+    fd = festival("ad", spots, random.Random(8), "dark", (4.8, 6.4), 140)
+    fw = ('<defs>{}</defs><g style="mix-blend-mode:{}" opacity="{}">{}</g>'.format(fl[0], "multiply", 0.85, fl[1]),
+          '<defs>{}</defs><g style="mix-blend-mode:{}" opacity="{}">{}</g>'.format(fd[0], "screen", 0.9, fd[1]))
+    write_pair("activity", root, body, manga_overlay(w, h, 7, (w - 70, 54, 0.55, 0.8, 0.6), extra=extra), stamp(40, 22, 86, 26, "活動記録", 14), css, faces,
+               color=fw)
 
 
 # ---------------------------------------------------------------- 贪吃蛇：白蛇吃网点草，草过一会儿又长回来

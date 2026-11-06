@@ -243,6 +243,10 @@ def divider():
 """)
     trail = (f'<linearGradient id="trailR" x1="0" x2="1"><stop offset="0" stop-color="{{c}}" stop-opacity="0" /><stop offset="1" stop-color="{{c}}" /></linearGradient>'
              f'<linearGradient id="trailL" x1="1" x2="0"><stop offset="0" stop-color="{{c}}" stop-opacity="0" /><stop offset="1" stop-color="{{c}}" /></linearGradient>')
+    # 两条细线上方，小小的花火此起彼伏
+    spots = [(96, 22, 13, "botan"), (196, 20, 15, "kiku"), (292, 23, 11, "wa"), (508, 22, 12, "botan"), (604, 20, 15, "kiku"), (704, 23, 12, "wa")]
+    fl, fd = (festival("dv" + m[0], spots, random.Random(12), m, (3.2, 4.8), 26) for m in ("light", "dark"))
+    art.color(f'<defs>{fl[0]}</defs><g style="mix-blend-mode:multiply">{fl[1]}</g>', f'<defs>{fd[0]}</defs><g style="mix-blend-mode:screen">{fd[1]}</g>')
     art.color(f'<defs>{trail.format(c=RED)}</defs><circle cx="400" cy="22" r="1.6" fill="{RED}" />{runners}',
               f'<defs>{trail.format(c=NIGHT_RED)}</defs><circle cx="400" cy="22" r="1.6" fill="{NIGHT_RED}" />{runners.replace(RED, NIGHT_RED)}')
     art.write(OUT, "divider")

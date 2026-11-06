@@ -684,14 +684,14 @@ def firework(uid, kind, x, y, r, scheme, dur, delay, rng, mode, rise=180):
                   f'{flash}<g class="fw" style="--droop:{r * 0.18:.0f}px;{style}">{body}</g></g>')
 
 
-def festival(prefix, spots, rng, mode, period=(5.2, 7.4)):
+def festival(prefix, spots, rng, mode, period=(5.2, 7.4), rise=180):
     """一组花火：周期不同、相位错开，任何时刻都有在开的和在谢的。spots: [(x, y, r, kind)]"""
     defs, body = [], []
     n = len(spots)
     for i, (x, y, r, kind) in enumerate(spots):
         dur = rng.uniform(*period)
         delay = dur * i / n + rng.uniform(0, 0.4)
-        d, b = firework(f"{prefix}{i}", kind, x, y, r, SCHEMES[(i * 3 + len(prefix)) % len(SCHEMES)], dur, delay, rng, mode)
+        d, b = firework(f"{prefix}{i}", kind, x, y, r, SCHEMES[(i * 3 + len(prefix)) % len(SCHEMES)], dur, delay, rng, mode, rise)
         defs.append(d)
         body.append(b)
     return "".join(defs), "".join(body)
