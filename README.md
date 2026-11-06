@@ -1,22 +1,15 @@
-<!-- Hi There 波浪头图 -->
+<!-- 头图：夕焼けの屋上 -->
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/header-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/header-light.svg" width="100%" alt="Hi there, I am Yuki" /></picture></p>
 
-<!-- img -->
-<p align="center"><img src="./profile/banner.svg" width="100%" alt="ADHD? Python, C++, no problem" /></p>
+<!-- 第1話 自己紹介：me 站点的漫画页（人物图在 profile/images/） -->
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/manga-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/manga-light.svg" width="100%" alt="第1話 自己紹介 — はじめまして、ユキです。" /></picture></p>
 
-<!-- Tech Otaku Dynamic Typing ♡ -->
-<p align="center">
-  <a href="https://chaosnap.github.io/">
-    <img
-      src="https://readme-typing-svg.demolab.com/?lines=%3E%20Initializing%20World%20Line%201.048596%20...;%E3%82%82%E3%81%97%E4%B8%96%E7%95%8C%E3%81%8C%E3%83%90%E3%82%B0%E3%81%AA%E3%82%89%E3%80%81%E5%90%9B%E3%81%AF%E5%83%95%E3%81%AE%E3%83%91%E3%83%83%E3%83%81%E3%80%82;%E3%81%93%E3%81%AE%E4%B8%96%E7%95%8C%E7%B7%9A%E3%81%A7%E3%80%81%E3%81%BE%E3%81%9F%E5%90%9B%E3%81%AB%E4%BC%9A%E3%81%84%E3%81%9F%E3%81%84%E3%80%82;ERROR%20404%3A%20Social%20Life%20Not%20Found.;while%20%28alive%29%20%7B%20code%28%29%3B%20anime%28%29%3B%20sleep%280%29%3B%20%7D;Reality%20is%20temporary.%20Code%20is%20eternal.;El%20Psy%20Kongroo.&center=true&vCenter=true&width=760&height=56&size=26&color=E5383B&pause=1400&font=Shippori+Mincho&weight=800"
-      alt="Initializing World Line 1.048596... ♡"
-    />
-  </a>
-</p>
+<!-- 世界线台词条（替代原来的打字机） -->
+<p align="center"><a href="https://me-rose-mu.vercel.app/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/quote-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/quote-light.svg" width="80%" alt="Initializing World Line 1.048596 ... El Psy Kongroo." /></picture></a></p>
 
 <!-- profile logo 个人资料徽标 -->
 <p align="center">
-  <a href="https://chaosnap.github.io/"><img src="https://img.shields.io/badge/Blog-15171D?style=for-the-badge&logo=githubpages&logoColor=white" alt="Blog" /></a>
+  <a href="https://me-rose-mu.vercel.app/"><img src="https://img.shields.io/badge/Blog-15171D?style=for-the-badge&logo=githubpages&logoColor=white" alt="Blog" /></a>
   <a href="https://twitter.com/WalesHua/"><img src="https://img.shields.io/badge/Twitter-15171D?style=for-the-badge&logo=x&logoColor=white" alt="Twitter" /></a>
   <a href="https://www.facebook.com/profile.php?id=100050543000498&mibextid=ZbWKwL"><img src="https://img.shields.io/badge/Facebook-15171D?style=for-the-badge&logo=facebook&logoColor=white" alt="Facebook" /></a>
   <a href="https://www.youtube.com"><img src="https://img.shields.io/badge/YouTube-15171D?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube" /></a>
