@@ -143,7 +143,7 @@ def kana_rain(rng, width, height, clip):
 
 
 PROMPT = "> I am Yuki"
-CHAR_W = 18.1  # 30px 等宽字体每个字符的宽度
+CHAR_W = 18.6  # 30px 等宽字体每个字符的宽度
 TYPE_X = round(600 - len(PROMPT) * CHAR_W / 2)
 
 
@@ -189,7 +189,7 @@ def header():
   {sparks([(150, 46, 17, 0), (285, 132, 11, 1.2), (92, 150, 8, 2.4), (1052, 40, 17, 0.6), (925, 138, 11, 1.8), (1120, 150, 8, 3)], CREAM)}
   {glitch(600, 116, "HI THERE", "title", "url(#title)")}
   <g clip-path="url(#typedClip)"><text class="prompt" x="{TYPE_X}" y="178">&gt; I am Yuki</text></g>
-  <rect class="cursor" x="{TYPE_X}" y="152" width="15" height="31">{type_anim("x", TYPE_X + 2)}</rect>
+  <rect class="cursor" x="{TYPE_X}" y="152" width="15" height="31">{type_anim("x", TYPE_X + 9)}</rect>
   <text class="jp" x="600" y="210" text-anchor="middle">ようこそ、僕の世界線へ</text>
   {petals(rng, 12, 1200, 300)}
 </svg>
