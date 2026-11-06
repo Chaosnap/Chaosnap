@@ -13,7 +13,7 @@
         <style>
           .header {
             font: 600 18px 'Segoe UI', Ubuntu, Sans-Serif;
-            fill: #8e3a59;
+            fill: #15171d;
             animation: fadeInAnimation 0.8s ease-in-out forwards;
           }
           @supports(-moz-appearance: auto) {
@@ -22,15 +22,15 @@
           }
           
     .description {
-      font: 400 13px 'Segoe UI', Ubuntu, Sans-Serif;fill: #4a3b3d;
+      font: 400 13px 'Segoe UI', Ubuntu, Sans-Serif;fill: #15171d;
       
     }
-    .gray { font: 400 12px 'Segoe UI', Ubuntu, Sans-Serif; fill: #4a3b3d }
+    .gray { font: 400 12px 'Segoe UI', Ubuntu, Sans-Serif; fill: #15171d }
     .badge { font: 600 11px 'Segoe UI', Ubuntu, Sans-Serif; }
-    .badge rect { opacity: 0.2; stroke: #4a3b3d }
-    .badge text { fill: #4a3b3d }
+    .badge rect { opacity: 0.2; stroke: #15171d }
+    .badge text { fill: #15171d }
 
-    .stat { font: 400 12px 'Segoe UI', Ubuntu, Sans-Serif; fill: #4a3b3d }
+    .stat { font: 400 12px 'Segoe UI', Ubuntu, Sans-Serif; fill: #15171d }
     .stagger {
       opacity: 0;
       animation: fadeInAnimation 0.3s ease-in-out forwards;
@@ -38,7 +38,7 @@
     .not_bold { font-weight: 400 }
     .bold { font-weight: 700 }
     .icon {
-      fill: #c96f7f;
+      fill: #15171d;
       display: block;
     }
   
@@ -69,13 +69,6 @@
         
         <defs>
           
-          <linearGradient
-            id="gradient"
-            gradientTransform="rotate(135)"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop offset="0%" stop-color="#fffaf5" />,<stop offset="100%" stop-color="#f9ebe1" />
-          </linearGradient>
           
         </defs>
         
@@ -85,11 +78,11 @@
           class="card-bg"
           x="0.5"
           y="0.5"
-          rx="12"
+          rx="6"
           height="99%"
-          stroke="#eadbcd"
+          stroke="#15171d"
           width="399"
-          fill="url(#gradient)"
+          fill="#f3f1ee"
           stroke-opacity="1"
         />
 
@@ -158,33 +151,5 @@
     
   
         </g>
-      <!-- decorated -->
-<defs>
-  <linearGradient id="zzGlow" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="400.0" y2="140.0">
-    <stop offset="0" stop-color="#c96f7f" stop-opacity="0.15" />
-    <stop offset="0.42" stop-color="#c96f7f" stop-opacity="0.15" />
-    <stop offset="0.5" stop-color="#e8a0a8" />
-    <stop offset="0.58" stop-color="#8e3a59" stop-opacity="0.15" />
-    <stop offset="1" stop-color="#c96f7f" stop-opacity="0.15" />
-    <animateTransform attributeName="gradientTransform" type="rotate" values="0 200.0 70.0;360 200.0 70.0" dur="6s" repeatCount="indefinite" />
-  </linearGradient>
-  <linearGradient id="zzSheen" x1="0" x2="1">
-    <stop offset="0" stop-color="#ffffff" stop-opacity="0" />
-    <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.55" />
-    <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
-  </linearGradient>
-  <clipPath id="zzClip"><rect x="0.5" y="0.5" width="399.0" height="139.0" rx="12" /></clipPath>
-</defs>
-<style>
-  .zz-sheen { animation: zzSheen 6.5s ease-in-out infinite; }
-  @keyframes zzSheen {
-    0%, 60% { transform: translateX(-180px) skewX(-20deg); }
-    100% { transform: translateX(520px) skewX(-20deg); }
-  }
-</style>
-<g pointer-events="none">
-  <g clip-path="url(#zzClip)"><rect class="zz-sheen" x="0" y="-28" width="72" height="196" fill="url(#zzSheen)" /></g>
-  <rect x="1" y="1" width="398.0" height="138.0" rx="12" fill="none" stroke="url(#zzGlow)" stroke-width="2" />
-</g>
-</svg>
+      </svg>
     
