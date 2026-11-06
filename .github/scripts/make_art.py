@@ -234,7 +234,17 @@ def divider():
             f'transform="scale(0.8)" fill="{PAPER}" stroke="{INK}" stroke-width="1.1" /></g></g>'
             f'{foam(rng, 7, 350, 450, 36, 44, 1.6, 3.4, (16, 34), 0.2)}'
             f'{sparkles([(352, 22, 4, 0), (448, 22, 4, 1.6)])}')
-    art.color(f'<circle cx="400" cy="22" r="1.6" fill="{RED}" />', f'<circle cx="400" cy="22" r="1.6" fill="{NIGHT_RED}" />')
+    runners = "".join(f'<g class="run" style="--to:{d * 330}px;animation-delay:{-k * 1.6:.1f}s"><circle cx="{400 + d * 30}" cy="22" r="2" fill="{RED}" />'
+                      f'<rect x="{400 + d * 30 - (24 if d > 0 else 0)}" y="21.4" width="24" height="1.2" fill="url(#{"trailR" if d > 0 else "trailL"})" /></g>'
+                      for d in (-1, 1) for k in range(2))
+    art.css.append(f"""
+  .run {{ animation: run 3.2s {EASE} infinite; }}
+  @keyframes run {{ 0% {{ transform: translateX(0); opacity: 0; }} 12% {{ opacity: 1; }} 80% {{ opacity: 0.9; }} 100% {{ transform: translateX(var(--to)); opacity: 0; }} }}
+""")
+    trail = (f'<linearGradient id="trailR" x1="0" x2="1"><stop offset="0" stop-color="{{c}}" stop-opacity="0" /><stop offset="1" stop-color="{{c}}" /></linearGradient>'
+             f'<linearGradient id="trailL" x1="1" x2="0"><stop offset="0" stop-color="{{c}}" stop-opacity="0" /><stop offset="1" stop-color="{{c}}" /></linearGradient>')
+    art.color(f'<defs>{trail.format(c=RED)}</defs><circle cx="400" cy="22" r="1.6" fill="{RED}" />{runners}',
+              f'<defs>{trail.format(c=NIGHT_RED)}</defs><circle cx="400" cy="22" r="1.6" fill="{NIGHT_RED}" />{runners.replace(RED, NIGHT_RED)}')
     art.write(OUT, "divider")
 
 
@@ -444,7 +454,7 @@ def manga_page(F):
   .hello {{ font: 800 22px {MINCHO_STACK}; fill: {INK}; }}
   .narr {{ font: 800 17px {MINCHO_STACK}; fill: {INK}; }}
   .sfxA {{ font: 800 96px {MINCHO_STACK}; }}
-  .sfxC {{ font: 800 62px {MINCHO_STACK}; }}
+  .sfxC {{ font: 800 30px {MINCHO_STACK}; }}
   .sfxA, .sfxC {{ fill: #ffffff; stroke: {INK}; stroke-width: 3px; paint-order: stroke; stroke-linejoin: round; }}
   .sfxsh {{ fill: {INK}; stroke: {INK}; }}
   .mono {{ font: 500 16px 'Noto Serif SC', 'Songti SC', serif; fill: {INK}; }}
@@ -459,6 +469,9 @@ def manga_page(F):
   .kenburns {{ transform-origin: 980px 360px; animation: kb 19.2s {EASE} infinite alternate; }}
   @keyframes kb {{ from {{ transform: scale(1); }} to {{ transform: scale(1.05) translateY(-6px); }} }}
   .glintB {{ animation: glintB 6.4s {EASE} infinite; }}
+  .kenburnsC {{ transform-origin: 178px 660px; animation: kb 19.2s {EASE} infinite alternate-reverse; }}
+  .glintC {{ animation: glintC 6.4s {EASE} infinite; animation-delay: -3.2s; }}
+  @keyframes glintC {{ 0% {{ transform: translateX(0); }} 40%, 100% {{ transform: translateX(760px); }} }}
   @keyframes glintB {{ 0% {{ transform: translate(-500px, -500px); }} 40%, 100% {{ transform: translate(500px, 500px); }} }}
   .buzz {{ transform-box: fill-box; transform-origin: center; animation: buzz 1.6s {EASE} infinite alternate; }}
   @keyframes buzz {{ from {{ transform: scale(1) rotate(0deg); }} to {{ transform: scale(1.035) rotate(-0.8deg); }} }}
@@ -495,11 +508,13 @@ def manga_page(F):
             f'<text class="note" x="1060" y="573">本人</text>')
     art.color(f'<g class="bob">{note_arrow}</g>', f'<g class="bob">{note_arrow.replace(RED, NIGHT_RED)}</g>')
 
-    # C：集中線とミーンミンミン
-    from manga import focus_lines
-    art.ink(f'<g clip-path="url(#pC)"><rect x="16" y="488" width="324" height="{H - 504}" fill="{PAPER}" />'
-            f'<g class="spinslow" style="transform-origin:178px 660px">{focus_lines(178, 660, 700, 700, 90, 70, random.Random(6), 0.95)}</g></g>')
-    sfx_c = (sfx(F["jp"], "ミーン", 46, 640, 62, "sfxC", 5, -7) + sfx(F["jp"], "ミンミン", 30, 724, 62, "sfxC", 5, -7))
+    # C：头像（me 站点的 icon），夏天的天空；小字的蝉鸣贴在右上角
+    icon = base64.b64encode((OUT / "images" / "icon.webp").read_bytes()).decode()
+    art.color(f'<g clip-path="url(#pC)"><g class="kenburnsC"><image x="16" y="488" width="324" height="{H - 504}" preserveAspectRatio="xMidYMid slice" '
+              f'href="data:image/webp;base64,{icon}" /></g><g class="glintC"><rect x="-300" y="488" width="260" height="{H - 504}" fill="url(#portraitGlint)" /></g></g>')
+    art.ink(f'<g clip-path="url(#pC)">{foam(rng, 12, 30, 330, 760, 830, 2.4, 7, (120, 300))}{petals(rng, 4, 30, 320, 480, 360)}'
+            f'{sparkles([(300, 520, 7, 0.4), (40, 800, 6, 1.8)])}</g>')
+    sfx_c = sfx(F["jp"], "ミーン", 226, 532, 30, "sfxC", 3, -6) + sfx(F["jp"], "ミンミン", 212, 568, 30, "sfxC", 3, -6)
     art.color(f'<g clip-path="url(#pC)"><g class="buzz">{sfx_c}</g></g>', f'<g clip-path="url(#pC)"><g class="buzz">{sfx_c.replace("sfxC", "sfxC sfxN")}</g></g>')
 
     # D：MONOLOGUE

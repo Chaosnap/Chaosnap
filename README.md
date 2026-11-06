@@ -73,7 +73,7 @@
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-tech-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-tech-light.svg" width="80%" alt="Tech Stack" /></picture></p>
 
 <!-- programming tool icon 编程工具图标 -->
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://skillicons.dev/icons?i=ps,ai,pr,c,cpp,cs,ts,discord,twitter,mongodb,instagram,idea,git&theme=dark" /><img src="https://skillicons.dev/icons?i=ps,ai,pr,c,cpp,cs,ts,discord,twitter,mongodb,instagram,idea,git&theme=light" alt="Skill icons" /></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://skillicons.dev/icons?i=ps%2Cai%2Cpr%2Cc%2Ccpp%2Ccs%2Cts%2Cdiscord%2Ctwitter%2Cmongodb%2Cinstagram%2Cidea%2Cgit&theme=dark" /><img src="https://skillicons.dev/icons?i=ps,ai,pr,c,cpp,cs,ts,discord,twitter,mongodb,instagram,idea,git&theme=light" alt="Skill icons" /></picture></p>
 
 <!-- gif -->
 <p align="center">
