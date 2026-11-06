@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="104" viewBox="0 0 900 104" role="img" aria-label="My Favorite Repositories">
+  <style>
+    .spark { transform-box: fill-box; transform-origin: center; animation: twinkle 3.6s ease-in-out infinite; }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.15; transform: scale(0.6) rotate(0deg); }
+      50% { opacity: 1; transform: scale(1.15) rotate(45deg); }
+    }
+    .petal { transform-box: fill-box; transform-origin: center; opacity: 0; animation: fall linear infinite; }
+    @keyframes fall {
+      0% { opacity: 0; transform: translate(0, -40px) rotate(0deg); }
+      10% { opacity: 0.95; }
+      85% { opacity: 0.85; }
+      100% { opacity: 0; transform: translate(var(--dx, 70px), var(--dy, 340px)) rotate(560deg); }
+    }
+    .gl-c, .gl-m { opacity: 0; }
+    .gl-c { fill: #4fd8e8; animation: glc 6s steps(1) infinite; }
+    .gl-m { fill: #ff5fa2; animation: glm 6s steps(1) infinite; }
+    @keyframes glc {
+      0%, 86%, 100% { opacity: 0; transform: translate(0, 0); }
+      87% { opacity: 0.85; transform: translate(-5px, 1px); }
+      89% { opacity: 0.85; transform: translate(4px, -2px); }
+      91% { opacity: 0; }
+      94% { opacity: 0.7; transform: translate(-3px, 0); }
+      95% { opacity: 0; }
+    }
+    @keyframes glm {
+      0%, 86%, 100% { opacity: 0; transform: translate(0, 0); }
+      87% { opacity: 0.85; transform: translate(5px, -1px); }
+      89% { opacity: 0.85; transform: translate(-4px, 2px); }
+      91% { opacity: 0; }
+      94% { opacity: 0.7; transform: translate(3px, 0); }
+      95% { opacity: 0; }
+    }
+    .shake { animation: shake 6s steps(1) infinite; }
+    @keyframes shake {
+      0%, 86%, 100% { transform: translate(0, 0); }
+      87% { transform: translate(2px, 0) skewX(-6deg); }
+      89% { transform: translate(-2px, 0) skewX(4deg); }
+      91% { transform: translate(0, 0); }
+    }
+
+    .title { font: 700 34px Georgia, 'Times New Roman', serif; letter-spacing: 1.5px; }
+    .jp { font: 400 15px 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif CJK JP', 'Noto Serif JP', serif; letter-spacing: 8px; fill: #c96f7f; }
+    .line { stroke-dasharray: 400; stroke-dashoffset: 400; animation: draw 1.6s 0.3s ease-out forwards; }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    .reveal { animation: reveal 1.4s ease-out both; }
+    @keyframes reveal { from { opacity: 0; transform: translateY(10px); letter-spacing: 12px; } to { opacity: 1; transform: none; } }
+    .cursor { fill: #c96f7f; animation: blink 0.9s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+  </style>
+  <defs>
+    <linearGradient id="shimmer" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="900" y2="0" spreadMethod="repeat">
+      <stop offset="0" stop-color="#8e3a59" /><stop offset="0.35" stop-color="#c96f7f" /><stop offset="0.5" stop-color="#f6c9cf" /><stop offset="0.65" stop-color="#c96f7f" /><stop offset="1" stop-color="#8e3a59" />
+      <animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="900 0" dur="4.5s" repeatCount="indefinite" />
+    </linearGradient>
+    <linearGradient id="fadeL" x1="0" x2="1"><stop offset="0" stop-color="#c96f7f" stop-opacity="0" /><stop offset="1" stop-color="#c96f7f" /></linearGradient>
+    <linearGradient id="fadeR" x1="0" x2="1"><stop offset="0" stop-color="#c96f7f" /><stop offset="1" stop-color="#c96f7f" stop-opacity="0" /></linearGradient>
+  </defs>
+  <path class="line" d="M185.60000000000002 40H-44.39999999999998" stroke="url(#fadeR)" stroke-width="1.5" />
+  <path class="line" d="M714.4 40H944.4" stroke="url(#fadeL)" stroke-width="1.5" />
+  <path class="spark" fill="#c96f7f" d="M-62.39999999999998 32C-61.439999999999976 39.04 -61.439999999999976 39.04 -54.39999999999998 40C-61.439999999999976 40.96 -61.439999999999976 40.96 -62.39999999999998 48C-63.35999999999998 40.96 -63.35999999999998 40.96 -70.39999999999998 40C-63.35999999999998 39.04 -63.35999999999998 39.04 -62.39999999999998 32Z" style="animation-delay:0s"/>
+  <path class="spark" fill="#c96f7f" d="M962.4 32C963.36 39.04 963.36 39.04 970.4 40C963.36 40.96 963.36 40.96 962.4 48C961.4399999999999 40.96 961.4399999999999 40.96 954.4 40C961.4399999999999 39.04 961.4399999999999 39.04 962.4 32Z" style="animation-delay:1.8s"/>
+  <path class="spark" fill="#c96f7f" d="M189.60000000000002 13C190.20000000000002 17.4 190.20000000000002 17.4 194.60000000000002 18C190.20000000000002 18.6 190.20000000000002 18.6 189.60000000000002 23C189.00000000000003 18.6 189.00000000000003 18.6 184.60000000000002 18C189.00000000000003 17.4 189.00000000000003 17.4 189.60000000000002 13Z" style="animation-delay:0.9s"/>
+  <path class="spark" fill="#c96f7f" d="M710.4 59C711.0 63.4 711.0 63.4 715.4 64C711.0 64.6 711.0 64.6 710.4 69C709.8 64.6 709.8 64.6 705.4 64C709.8 63.4 709.8 63.4 710.4 59Z" style="animation-delay:2.7s"/>
+  <g class="reveal"><g><text class="title gl-c" x="450.0" y="52" text-anchor="middle">My Favorite Repositories</text><text class="title gl-m" x="450.0" y="52" text-anchor="middle">My Favorite Repositories</text><text class="title shake" x="450.0" y="52" text-anchor="middle" fill="url(#shimmer)">My Favorite Repositories</text></g></g>
+  <text class="jp reveal" x="450.0" y="88" text-anchor="middle" style="animation-delay:0.5s">「推しリポジトリ」</text>
+</svg>

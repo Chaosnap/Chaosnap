@@ -14,7 +14,7 @@ on:
       - main
     paths:
       - .github/workflows/PersonalStatus.yml
-      - .github/scripts/render-trophy.ts
+      - .github/scripts/**
 
 env:
   # 亮色卡片的配色，取自 Background.jpg 的奶油色和玫瑰色
@@ -90,6 +90,26 @@ jobs:
         run: |
           cp ../.github/scripts/render-trophy.ts .
           deno run --allow-net --allow-env --allow-read --allow-write render-trophy.ts "${{ github.repository_owner }}" ../profile/trophy.svg
+
+      # 活动折线图：先下载到仓库里，再由 decorate.py 加动画；接口出错时保留上一次的图
+      - name: Download activity graph
+        continue-on-error: true
+        run: |
+          curl -fsSL --retry 3 -o profile/activity.svg.tmp "https://github-readme-activity-graph-inky.vercel.app/graph?username=${{ github.repository_owner }}&bg_color=fdf6ef&color=4a3b3d&line=c96f7f&point=8e3a59&area=true&area_color=e8b4b8&title_color=8e3a59&hide_border=true&radius=12&custom_title=Activity%20Graph"
+          mv profile/activity.svg.tmp profile/activity.svg
+
+      # 贪吃蛇：亮色格子，玫瑰色从浅到深，蛇是墨色
+      - name: Generate contribution snake
+        continue-on-error: true
+        uses: Platane/snk/svg-only@v3
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            profile/snake-raw.svg?color_snake=#4a3b3d&color_dots=#efe2d8,#f2c9c4,#e39aa6,#c96f7f,#8e3a59
+
+      # 给卡片加流光边框和扫光，活动图加折线动画，贪吃蛇包进卡片
+      - name: Decorate cards
+        run: python3 .github/scripts/decorate.py
 
       # Commit all generated SVG files
       - name: Commit generated cards
