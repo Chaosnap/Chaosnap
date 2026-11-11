@@ -161,7 +161,7 @@
   <mask id="toneDown" maskContentUnits="objectBoundingBox"><rect width="1" height="1" fill="url(#fadeDown)" /></mask>
   <mask id="toneUp" maskContentUnits="objectBoundingBox"><rect width="1" height="1" fill="url(#fadeUp)" /></mask><linearGradient id="streak" gradientUnits="userSpaceOnUse" x1="0" y1="-46" x2="0" y2="-12"><stop offset="0" stop-color="#eceae6" stop-opacity="0" /><stop offset="1" stop-color="#eceae6" stop-opacity="0.7" /></linearGradient><linearGradient id="band" x1="0" x2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0" /><stop offset="0.5" stop-color="#ffffff" stop-opacity="0.13" /><stop offset="1" stop-color="#ffffff" stop-opacity="0" /></linearGradient><linearGradient id="band2" x1="0" x2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0" /><stop offset="0.5" stop-color="#ffffff" stop-opacity="0.85" /><stop offset="1" stop-color="#ffffff" stop-opacity="0" /></linearGradient></defs><g filter="url(#night)">
         <title id="titleId">Yuki&#39;s GitHub Stats, Rank: B</title>
-        <desc id="descId">Total Stars Earned: 149, Total Commits  (last year) : 323, Total Issues: 5, Contributed to (last year): 3</desc>
+        <desc id="descId">Total Stars Earned: 153, Total Commits  (last year) : 323, Total Issues: 5, Contributed to (last year): 3</desc>
         <style>
           .header {
             font: 600 18px 'Playfair Display', Georgia, 'Times New Roman', serif;
@@ -225,7 +225,7 @@
         stroke-dashoffset: 251.32741228718345;
       }
       to {
-        stroke-dashoffset: 131.11583104886094;
+        stroke-dashoffset: 130.08867231745108;
       }
     }
   
@@ -321,7 +321,7 @@
         x="224.01"
         y="12.5"
         data-testid="stars"
-      >149</text>
+      >153</text>
     </g>
   </g><g transform="translate(0, 25)">
     <g class="stagger" style="animation-delay: 600ms" transform="translate(25, 0)">
