@@ -25,14 +25,14 @@
   <img src="https://hits.sh/github.com/Chaosnap.svg?style=for-the-badge&label=Visitors&extraCount=569&color=e5383b&labelColor=15171d&logo=github&logoColor=white" alt="访客统计" />
 </p>
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="100%" alt="" /></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="70%" alt="" /></picture></p>
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-achievements-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-achievements-light.svg" width="80%" alt="Achievements" /></picture></p>
 
-<!-- GitHub 奖杯🏆，由 .github/workflows/PersonalStatus.yml 每天生成 -->
+<!-- GitHub 奖杯🏆，由 .github/workflows/PersonalStatus.yml 每天生成，decorate.py 去色后摆进卡片 -->
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/trophy-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/trophy-light.svg" alt="GitHub Trophies" /></picture></p>
 
-<!-- Snake Code Contribution Map 贪吃蛇代码贡献图 -->
+<!-- Snake Code Contribution Map 贪吃蛇代码贡献图（主页上唯一保留动画的卡片） -->
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/snake-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/snake-light.svg" width="100%" alt="Contribution snake" /></picture></p>
 
 <!-- Awesome repo 比较好的仓库-->
@@ -43,32 +43,29 @@
   <a href="https://github.com/Chaosnap/Yohaku"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/pin-yohaku-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/pin-yohaku-light.svg" width="49%" alt="Yohaku" /></picture></a>
 </p>
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="100%" alt="" /></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="70%" alt="" /></picture></p>
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-stats-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-stats-light.svg" width="80%" alt="GitHub Stats" /></picture></p>
 
-<!--  统计信息 -->
-<!-- GitHub statistics -->
+<!-- GitHub statistics 统计信息：decorate.py 从 Action 生成的卡片里读出数字重画 -->
 <p align="center">
   <a href="https://github.com/Chaosnap"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/stats-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/stats-light.svg" width="59%" alt="GitHub Statistics" /></picture></a>
   <a href="https://github.com/Chaosnap?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/top-langs-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/top-langs-light.svg" width="39%" alt="Top Languages" /></picture></a>
 </p>
 
-<!-- GitHub 活动统计图，由 PersonalStatus.yml 下载并加动画 -->
+<!-- GitHub 活动统计图，由 PersonalStatus.yml 下载，decorate.py 读出数据后重画 -->
 <p align="center">
   <picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/activity-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/activity-light.svg" width="100%" alt="Activity Graph" /></picture>
 </p>
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="100%" alt="" /></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="70%" alt="" /></picture></p>
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-playing-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-playing-light.svg" width="80%" alt="Now Playing" /></picture></p>
 
-<!-- Spotify 音乐，左右是跟着节奏跳动的声波 -->
-<p align="center">
-  <picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/wing-left-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/wing-left-light.svg" width="31%" alt="" /></picture><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/now-playing-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/now-playing-light.svg" width="36%" alt="Now playing: Yorushika - Hitchcock" /></picture><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/wing-right-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/wing-right-light.svg" width="31%" alt="" /></picture>
-</p>
+<!-- 播放卡：封面、唱片和曲名（静态图，profile/images/cover.jpg 是封面） -->
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/now-playing-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/now-playing-light.svg" width="100%" alt="Now playing: Yorushika - Hitchcock" /></picture></p>
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="100%" alt="" /></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="70%" alt="" /></picture></p>
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-tech-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-tech-light.svg" width="80%" alt="Tech Stack" /></picture></p>
 

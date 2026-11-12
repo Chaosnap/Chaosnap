@@ -87,18 +87,26 @@ class Font:
                 f"src: url(data:font/ttf;base64,{data}) format('truetype'); }}")
 
 
+_FONTS = {}
+
+
 def load_font(family, weight, text):
-    """只取 text 里的字。返回 None 表示取不到（离线等），调用方退回系统衬线体。"""
+    """只取 text 里的字（同一组字只取一次）。返回 None 表示取不到（离线等），调用方退回系统衬线体。"""
     chars = "".join(sorted(set(text + " ")))
+    key = (family, weight, chars)
+    if key in _FONTS:
+        return _FONTS[key]
     url = ("https://fonts.googleapis.com/css2?family=" + family.replace(" ", "+")
            + f":wght@{weight}&text=" + urllib.parse.quote(chars))
     try:
         css = urllib.request.urlopen(url, timeout=30).read().decode()
         src = re.search(r"url\((https://[^)]+)\) format\('truetype'\)", css).group(1)
-        return Font(family, weight, urllib.request.urlopen(src, timeout=30).read())
+        font = Font(family, weight, urllib.request.urlopen(src, timeout=30).read())
     except Exception as exc:  # noqa: BLE001
         print(f"font {family} {weight} unavailable: {exc}")
-        return None
+        font = None
+    _FONTS[key] = font
+    return font
 
 
 def letters(font, text, size, cx, y, cls, spacing=0.0, step=0.11, anchor="middle"):
@@ -117,8 +125,9 @@ def letters(font, text, size, cx, y, cls, spacing=0.0, step=0.11, anchor="middle
 class Art:
     """按层组织一张图：ink 层在深色版里换成夜间配色，color 层保持原色（可给深色版单独一份）。"""
 
-    def __init__(self, w, h, label="", role="img"):
-        self.w, self.h, self.label, self.role = w, h, label, role
+    def __init__(self, w, h, label="", role="img", lean=False):
+        """lean=True：静态图，不带公用的动画 CSS，只嵌自己的样式和字体。"""
+        self.w, self.h, self.label, self.role, self.lean = w, h, label, role, lean
         self.css, self.defs, self.layers = [], [DEFS], []
 
     def ink(self, svg):
@@ -137,7 +146,7 @@ class Art:
                 body.append(dark if mode == "dark" and dark is not None else light)
         aria = f'role="img" aria-label="{escape(self.label)}"' if self.role == "img" else 'role="presentation"'
         return (f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{self.w}" height="{self.h}" '
-                f'viewBox="0 0 {self.w} {self.h}" {aria}>\n<style>{conv(BASE_CSS + "".join(self.css))}</style>\n<defs>{conv("".join(self.defs))}</defs>\n'
+                f'viewBox="0 0 {self.w} {self.h}" {aria}>\n<style>{conv(("" if self.lean else BASE_CSS) + "".join(self.css))}</style>\n<defs>{conv("".join(self.defs))}</defs>\n'
                 + "\n".join(body) + "\n</svg>\n")
 
     def write(self, folder, name):
@@ -175,8 +184,6 @@ DEFS = f"""
   <pattern id="toneFine" width="3.4" height="3.4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><circle cx="1.7" cy="1.7" r="0.62" fill="{INK}" /></pattern>
   <pattern id="toneBig" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><circle cx="4" cy="4" r="2.2" fill="{INK}" /></pattern>
   <pattern id="hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)"><line x1="0" y1="0" x2="0" y2="4" stroke="{INK}" stroke-width="0.7" /></pattern>
-  <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
-    <feColorMatrix values="0 0 0 0 0.08  0 0 0 0 0.08  0 0 0 0 0.08  0 0 0 0.09 0" /></filter>
   <linearGradient id="fadeDown" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0" /><stop offset="1" stop-color="#fff" /></linearGradient>
   <linearGradient id="fadeRight" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0" /><stop offset="1" stop-color="#fff" /></linearGradient>
   <linearGradient id="fadeUp" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0" /><stop offset="1" stop-color="#fff" /></linearGradient>

@@ -17,7 +17,7 @@ on:
       - .github/scripts/**
 
 env:
-  # 卡片按纸白墨黑生成，decorate.py 再去色并做出深色版
+  # 卡片按纸白墨黑生成，decorate.py 只从里面读数据（奖杯除外：去色后直接用）
   CARD_COLORS: "title_color=15171d&text_color=15171d&icon_color=15171d&bg_color=f3f1ee&border_color=15171d&border_radius=6"
 
 jobs:
@@ -107,7 +107,7 @@ jobs:
           outputs: |
             profile/snake-raw.svg?color_snake=#15171d&color_dots=#e4e1db,#c9c6bf,#9a978f,#5d5b56,#15171d
 
-      # 改成黑白漫画风并做出浅色 / 深色两版，活动图加折线动画，贪吃蛇包进一格漫画
+      # 从卡片里读出数据，重画成静态的黑白漫画风卡片（浅色 / 深色两版）；贪吃蛇是主页上唯一还在动的一张
       - name: Decorate cards
         run: python3 .github/scripts/decorate.py
 

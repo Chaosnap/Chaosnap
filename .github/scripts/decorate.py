@@ -1,26 +1,65 @@
 #!/usr/bin/env python3
-"""把 Action 生成的卡片改成黑白漫画风，并各出浅色、深色两版，由 PersonalStatus.yml 调用。
+"""把 Action 生成的卡片重新排成静态的黑白漫画风卡片，各出浅色、深色两版，由 PersonalStatus.yml 调用。
 
-原始卡片（stats.svg 等）保持不动，每次都从它生成 *-light.svg / *-dark.svg：
-- 字体换成内嵌的 Playfair Display；整张去色，深色版再反相到 me 站点的夜间配色
-- 加双线框、网点角、扫光、闪光、泡沫、樱花、小水母和红色印章标签（这些装饰在深色版里直接换成夜间配色）
-- 奖杯摆上展示架、各自浮动；活动图折线反复描出；贪吃蛇包进一格漫画，底下走胶片
+原始卡片（stats.svg 等）保持不动，每次从它们里读出数据，再用主页自己的字体和线条重新画一遍：
+- 统计、语言、置顶仓库、活动折线图：只取数字和文字，整张重画（不套滤镜，也没有动画）
+- 奖杯：上游的图去色后摆进同样的框里
+- 贪吃蛇：唯一还在动的一张——白蛇沿路径吃草，草过一会儿又长回来；其余装饰全是静态
 """
+import datetime
 import math
 import pathlib
-import random
 import re
 import sys
+import xml.etree.ElementTree as ET
+from html import escape
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
-from manga import (BASE_CSS, DEFS, EASE, EASE_OUT, INK, MINCHO, MINCHO_STACK, NIGHT_RED, PAPER, RED, SERIF, SERIF_STACK,  # noqa: E402
-                   chime, festival, film_strip, foam, jellyfish, letters, load_font, petals, sheen_grad, sparkles, stamp, title_fx, to_night)
+from manga import (DEFS, EASE, GRAY, INK, MINCHO, MINCHO_STACK, NIGHT_RED, PAPER, RED, SERIF, SERIF_STACK,  # noqa: E402
+                   Art, load_font, smooth, stamp, to_night)
 
 PROFILE = pathlib.Path(__file__).resolve().parents[2] / "profile"
-SANS_CSS = re.compile(r"""(['"])Segoe UI\1,\s*Ubuntu,(\s*"Helvetica Neue",)?\s*Sans-Serif""")
-SANS_ATTR = re.compile(r'font-family="[^"]*Segoe UI[^"]*"')
-LABELS = "能力値言語推し活動記録連載中草を食べる蛇・365日実績一年分の草を食べる白蛇、草はまた生える"
-JP = load_font(MINCHO, 800, LABELS)
+NS = "{http://www.w3.org/2000/svg}"
+OCTICON = {
+    "star": "M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25zm0 2.445L6.615 5.5a.75.75 0 01-.564.41l-3.097.45 2.24 2.184a.75.75 0 01.216.664l-.528 3.084 2.769-1.456a.75.75 0 01.698 0l2.77 1.456-.53-3.084a.75.75 0 01.216-.664l2.24-2.183-3.096-.45a.75.75 0 01-.564-.41L8 2.694v.001z",
+    "repo": "M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z",
+    "fork": "M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 100-1.5.75.75 0 000 1.5z",
+}
+# 语言条和色点：黑白漫画里用墨、网点、斜线代替颜色
+FILLS = [INK, "url(#tone)", "url(#hatch)", "url(#toneFine)", "url(#toneBig)", GRAY, "url(#tone)", "url(#hatch)"]
+
+
+# ---------------------------------------------------------------- 读上游卡片
+def read(name):
+    path = PROFILE / f"{name}.svg"
+    return path.read_text(encoding="utf-8") if path.exists() else None
+
+
+def parse(svg):
+    root = ET.fromstring(svg)
+    parents = {c: p for p in root.iter() for c in p}
+    return root, parents
+
+
+def tid(root, name):
+    return [el for el in root.iter() if el.get("data-testid") == name]
+
+
+def txt(el):
+    return re.sub(r"\s+", " ", "".join(el.itertext())).strip() if el is not None else ""
+
+
+def icon_path(el, parents):
+    """testid 文本所在那一行里的 octicon 路径（往上找几层，取第一个 <svg><path>）。"""
+    node = el
+    for _ in range(4):
+        node = parents.get(node)
+        if node is None:
+            break
+        p = node.find(f".//{NS}svg/{NS}path")
+        if p is not None:
+            return p.get("d")
+    return None
 
 
 def size(svg):
@@ -35,287 +74,322 @@ def split(svg):
     return svg[:i], svg[i:svg.rfind("</svg>")]
 
 
-def serif(svg):
-    text = "".join(re.findall(r">([^<>]+)<", svg))
-    faces = [f for f in (load_font(SERIF, 400, text), load_font(SERIF, 700, text)) if f]
-    svg = SANS_CSS.sub(SERIF_STACK, svg)
-    svg = SANS_ATTR.sub('font-family="Playfair Display, Georgia, serif"', svg)
-    return svg, faces
+# ---------------------------------------------------------------- 共用的版面部件
+def card(w, h, rx=6):
+    """内页卡片：纸、细边、再一圈发丝线。"""
+    return (f'<rect x="1.5" y="1.5" width="{w - 3}" height="{h - 3}" rx="{rx}" fill="{PAPER}" />'
+            f'<rect x="1.5" y="1.5" width="{w - 3}" height="{h - 3}" rx="{rx}" fill="none" stroke="{INK}" stroke-width="1.5" />'
+            f'<rect x="6.5" y="6.5" width="{w - 13}" height="{h - 13}" rx="{max(rx - 3, 1)}" fill="none" stroke="{INK}" stroke-width="0.6" opacity="0.7" />')
 
 
-def fit_stats(svg, faces):
-    """统计卡片的标签到数值的距离固定，衬线字更宽，按最长标签缩小字号。"""
-    bold = faces[-1] if faces else None
-    labels = re.findall(r'class="stat\s+bold"[^>]*>([^<]+)<', svg)
-    if bold and labels:
-        widest = max(bold.width(t.strip(), 14) for t in labels)
-        if widest > 190:
-            svg = svg.replace("font: 600 14px", f"font: 600 {max(11.5, 14 * 190 / widest):.1f}px", 1)
-    return svg
+def rule(x0, x1, y):
+    return f'<rect x="{x0}" y="{y - 0.4:.1f}" width="{x1 - x0:.0f}" height="0.8" fill="{INK}" />'
 
 
-KIRA_CSS = f"""
-  .kira {{ transform-box: fill-box; transform-origin: center; opacity: 0; animation: kira 2.4s {EASE_OUT} infinite; }}
-  @keyframes kira {{ 0% {{ opacity: 0; transform: scale(0.2) rotate(0deg); }} 12% {{ opacity: 1; }} 65% {{ opacity: 0; transform: scale(1) rotate(12deg); }} 100% {{ opacity: 0; transform: scale(1) rotate(12deg); }} }}
-  .sweep {{ animation: sweep 6.4s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }}
-  .comet {{ animation: comet linear infinite; }}
-  .comet.head {{ stroke-dasharray: 70 930; }}
-  .comet.tail {{ stroke-dasharray: 160 840; opacity: 0.22; }}
-  @keyframes comet {{ from {{ stroke-dashoffset: 1000; }} to {{ stroke-dashoffset: 0; }} }}
-  .rip {{ transform-box: fill-box; transform-origin: center; opacity: 0; animation: rip 2.4s {EASE_OUT} infinite; }}
-  @keyframes rip {{ 0% {{ opacity: 0; transform: scale(1); }} 10% {{ opacity: 0.8; }} 100% {{ opacity: 0; transform: scale(var(--s, 2.4)); }} }}
-  .orbit {{ animation: spin 19.2s linear infinite; }}
-  .orbit2 {{ animation: spin 4.8s linear infinite; }}
-  .barglint {{ animation: barglint 3.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }}
-  @keyframes barglint {{ 0% {{ transform: translateX(0); }} 60%, 100% {{ transform: translateX(var(--len)); }} }}
-  @keyframes sweep {{ 0% {{ transform: translateX(0); }} 45%, 100% {{ transform: translateX(var(--len)); }} }}
-"""
-BAND = ('<linearGradient id="band" x1="0" x2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0" />'
-        '<stop offset="0.5" stop-color="#ffffff" stop-opacity="__BAND__" /><stop offset="1" stop-color="#ffffff" stop-opacity="0" /></linearGradient>'
-        '<linearGradient id="band2" x1="0" x2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0" />'
-        '<stop offset="0.5" stop-color="#ffffff" stop-opacity="0.85" /><stop offset="1" stop-color="#ffffff" stop-opacity="0" /></linearGradient>')
+def leaders(x0, x1, y, pitch=5):
+    """目次式的点线引导。"""
+    if x1 - x0 < pitch:
+        return ""
+    d = "".join(f"M{x0 + k * pitch:.1f} {y}h0.01" for k in range(int((x1 - x0) // pitch) + 1))
+    return f'<path d="{d}" stroke="{INK}" stroke-width="1.3" stroke-linecap="round" opacity="0.4" />'
 
 
-
-def walk(svg):
-    """遍历卡片 SVG，累加 translate 和内嵌 <svg> 的 x/y，返回 [(标签, 元素, 绝对 x, 绝对 y)]。"""
-    import xml.etree.ElementTree as ET
-    root = ET.fromstring(svg)
-    out = []
-
-    def rec(el, ox, oy):
-        m = re.match(r"translate\(\s*([-\d.]+)[\s,]+([-\d.]+)\s*\)", el.get("transform") or "")
-        if m:
-            ox, oy = ox + float(m.group(1)), oy + float(m.group(2))
-        tag = el.tag.split("}")[-1]
-        if tag == "svg" and el is not root:
-            ox, oy = ox + float(el.get("x", 0)), oy + float(el.get("y", 0))
-        out.append((tag, el, ox, oy))
-        for c in el:
-            rec(c, ox, oy)
-    rec(root, 0.0, 0.0)
-    return out
+def tag(x, y, label, size=13, h=24):
+    """红色印章标签；x 为负表示右边缘贴在 -x。返回 (浅色, 深色)。"""
+    w = int(size * 1.15 * len(label) + 18)
+    s = stamp(x if x >= 0 else -x - w, y, w, h, label, size)
+    return s, s.replace(RED, NIGHT_RED)
 
 
-def comet(w, h, dur=9.6, delay=0.0, inset=5):
-    """跑马灯：两道红光沿着内框一圈圈地跑，后面拖着淡淡的墨色尾巴。"""
-    box = f'x="{inset}" y="{inset}" width="{w - 2 * inset:.0f}" height="{h - 2 * inset:.0f}" rx="3" pathLength="1000" fill="none" stroke-linecap="round"'
-    out = []
-    for k in (0, 0.5):
-        d = delay + k * dur
-        out.append(f'<rect {box} class="comet tail" stroke="{INK}" stroke-width="1.6" style="animation-duration:{dur}s;animation-delay:{-d:.2f}s" />'
-                   f'<rect {box} class="comet head" stroke="{RED}" stroke-width="2.4" style="animation-duration:{dur}s;animation-delay:{-(d + dur * 0.09):.2f}s" />')
-    return "".join(out)
+def icon(d, x, y, s=1.0, opacity=1.0):
+    return f'<g transform="translate({x} {y}) scale({s})" fill="{INK}" opacity="{opacity}"><path fill-rule="evenodd" d="{d}" /></g>'
 
 
-def ripples(x, y, r, n=3, dur=2.4, delay=0.0, scale=2.4):
-    return "".join(f'<circle class="rip" cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="none" stroke="{INK}" stroke-width="1" vector-effect="non-scaling-stroke" '
-                   f'style="--s:{scale};animation-duration:{dur}s;animation-delay:{-(delay + dur * i / n):.2f}s" />' for i in range(n))
+def arc(cx, cy, r, p):
+    """从正上方顺时针走 p 圈的弧。"""
+    p = max(0.001, min(0.999, p))
+    a = -math.pi / 2 + 2 * math.pi * p
+    return f"M{cx} {cy - r}A{r} {r} 0 {1 if p > 0.5 else 0} 1 {cx + r * math.cos(a):.2f} {cy + r * math.sin(a):.2f}"
 
 
-def kira(x, y, r, delay, dur=2.4):
-    """闪光：八道细光往外弹开、淡掉，中心一颗四角星。"""
-    rays = "".join(f"M{x + math.cos(a) * r * 0.35:.1f} {y + math.sin(a) * r * 0.35:.1f}L{x + math.cos(a) * r * (1 if k % 2 else 0.65):.1f} {y + math.sin(a) * r * (1 if k % 2 else 0.65):.1f}"
-                   for k, a in enumerate(i * math.pi / 4 for i in range(8)))
-    return (f'<g class="kira" style="animation-duration:{dur}s;animation-delay:{-delay:.2f}s"><path d="{rays}" stroke="{INK}" stroke-width="1" stroke-linecap="round" />'
-            f'<path d="M{x} {y - r * 0.3:.1f}L{x + r * 0.07:.1f} {y - r * 0.07:.1f}L{x + r * 0.3:.1f} {y}L{x + r * 0.07:.1f} {y + r * 0.07:.1f}L{x} {y + r * 0.3:.1f}L{x - r * 0.07:.1f} {y + r * 0.07:.1f}L{x - r * 0.3:.1f} {y}L{x - r * 0.07:.1f} {y - r * 0.07:.1f}Z" fill="{INK}" /></g>')
+def base_css(fonts, extra=""):
+    return "".join(f.css() for f in fonts if f) + f"""
+  .h {{ font: 700 18px {SERIF_STACK}; fill: {INK}; }}
+  .l {{ font: 400 13px {SERIF_STACK}; fill: {INK}; }}
+  .v {{ font: 700 14px {SERIF_STACK}; fill: {INK}; }}
+  .d {{ font: 400 12.5px {SERIF_STACK}; fill: {INK}; opacity: 0.85; }}
+  .s {{ font: 400 10.5px {SERIF_STACK}; fill: {GRAY}; letter-spacing: 2.5px; }}
+  .ax {{ font: 400 10.5px {SERIF_STACK}; fill: {GRAY}; }}
+  .m {{ font: 800 12px {MINCHO_STACK}; fill: {GRAY}; letter-spacing: 3px; }}
+""" + extra
 
 
-def sweep(w, h, delay=0.0, width=90):
-    """一道斜向的光从左扫到右，扫完停一会儿。"""
-    return (f'<g class="sweep" style="--len:{w + width * 3:.0f}px;animation-delay:{-delay:.2f}s"><rect x="{-width * 2:.0f}" y="{-h * 0.2:.0f}" width="{width}" height="{h * 1.4:.0f}" '
-            f'fill="url(#band)" transform="skewX(-18)" /></g>')
+def wrap(font, text, size, width, max_lines=2):
+    """按真实字宽折行（按词），超出的行数用省略号收尾。"""
+    if not font:
+        return [text]
+    lines, cur = [], ""
+    for word in text.split(" "):
+        trial = (cur + " " + word).strip()
+        if font.width(trial, size) > width and cur:
+            lines.append(cur)
+            cur = word
+        else:
+            cur = trial
+    if cur:
+        lines.append(cur)
+    if len(lines) > max_lines:
+        last = lines[max_lines - 1]
+        while last and font.width(last + " …", size) > width:
+            last = last[:-1].rstrip()
+        lines = lines[:max_lines - 1] + [last + " …"]
+    return lines
 
 
-def card_motion(name, svg, w, h):
-    """每张卡的专属动画：统计卡的段位圈有轨道和波纹，语言卡的色点脉动、进度条走光，置顶卡的语言点和星星。"""
-    out = []
-    nodes = walk(svg)
-    for tag, el, ox, oy in nodes:
-        cls = el.get("class") or ""
-        tid = el.get("data-testid") or ""
-        if tag == "circle" and cls == "rank-circle-rim":
-            cx, cy = ox + float(el.get("cx", 0)), oy + float(el.get("cy", 0))
-            out.append(f'<g transform="translate({cx:.1f} {cy:.1f})">'
-                       f'<g class="orbit"><circle r="50" fill="none" stroke="{INK}" stroke-width="0.9" stroke-dasharray="1.5 5.5" /></g>'
-                       f'<g class="orbit2"><circle cx="50" cy="0" r="3.2" fill="{RED}" /><circle cx="50" cy="0" r="6" fill="none" stroke="{RED}" stroke-width="0.8" opacity="0.6" /></g>'
-                       f'<g class="orbit" style="animation-direction:reverse"><circle r="58" fill="none" stroke="{INK}" stroke-width="0.6" stroke-dasharray="26 18 4 18" opacity="0.6" /></g>'
-                       f'</g>{ripples(cx, cy, 41, 3, 3.2, 0, 1.45)}')
-        elif tag == "circle" and (el.get("r") in ("5", "6")) and (tid == "lang-color" or el.get("cx") == "5"):
-            cx, cy = ox + float(el.get("cx", 0)), oy + float(el.get("cy", 0))
-            out.append(ripples(cx, cy, float(el.get("r")), 2, 2.4, len(out) * 0.4, 2.6))
-        elif tag == "rect" and tid == "lang-progress" and not any("barclip" in o for o in out):
-            bx, by = ox, oy
-            out.append(f'<clipPath id="barclip"><rect x="{bx:.1f}" y="{by:.1f}" width="250" height="8" rx="5" /></clipPath>'
-                       f'<g clip-path="url(#barclip)"><g class="barglint" style="--len:320px"><rect x="{bx - 60:.1f}" y="{by - 2:.1f}" width="50" height="12" fill="url(#band2)" /></g></g>')
-        elif tag == "svg" and "icon" in cls and any(t == "text" and (e.get("data-testid") == "stargazers") for t, e, _, _ in nodes):
-            if el.find("{http://www.w3.org/2000/svg}path") is not None and "M8 .25" in (el.find("{http://www.w3.org/2000/svg}path").get("d") or ""):
-                out.append(kira(ox + float(el.get("x", 0) or 0) + 8, oy + 8, 13, 0.6, 3.2))
-    return "".join(out)
+# ---------------------------------------------------------------- 统计卡
+def stats():
+    svg = read("stats")
+    if not svg:
+        return
+    root, parents = parse(svg)
+    heads = tid(root, "header")
+    head = txt(heads[0]) if heads else "GitHub Stats"
+    rows = []
+    for name in ("stars", "commits", "prs", "issues", "contribs", "reviews", "discussions_started", "discussions_answered"):
+        for el in tid(root, name):
+            sib = [t for t in parents[el].findall(f"{NS}text") if t is not el]
+            label = (txt(sib[0]) if sib else name).rstrip(":")
+            rows.append((label, txt(el), icon_path(el, parents)))
+    if not rows:
+        return
+    rank_el = tid(root, "level-rank-icon")
+    rank = txt(rank_el[0]) if rank_el else ""
+    m = re.search(r"@keyframes rankAnimation.*?to\s*\{\s*stroke-dashoffset:\s*([\d.]+)", svg, re.S)
+    prog = max(0.0, min(1.0, 1 - float(m.group(1)) / (2 * math.pi * 40))) if m else 0.0
+
+    W = 560
+    H = max(200, 86 + 27 * len(rows) + 28)
+    bold = load_font(SERIF, 700, head + "".join(v for _, v, _ in rows) + rank + "0123456789,.")
+    reg = load_font(SERIF, 400, "".join(lb for lb, _, _ in rows))
+    jp = load_font(MINCHO, 800, "能力値")
+    art = Art(W, H, f"{head}: " + ", ".join(f"{lb} {v}" for lb, v, _ in rows) + (f", rank {rank}" if rank else ""), lean=True)
+    art.css.append(base_css([bold, reg, jp], f"  .rank {{ font: 700 34px {SERIF_STACK}; fill: {INK}; }}\n"))
+    X0, XV = 30, 340
+    body = [card(W, H), f'<text class="h" x="{X0}" y="42">{escape(head)}</text>', rule(X0, W - 30, 56)]
+    for k, (label, value, d) in enumerate(rows):
+        y = 90 + k * 27
+        lw = reg.width(label, 13) if reg else 7 * len(label)
+        body.append((icon(d, X0, y - 12, 0.9, 0.8) if d else "")
+                    + f'<text class="l" x="{X0 + 26}" y="{y}">{escape(label)}</text>'
+                    + leaders(X0 + 26 + lw + 9, XV - 34, y - 1)
+                    + f'<text class="v" x="{XV}" y="{y}" text-anchor="end">{escape(value)}</text>')
+    cx, cy, r = 462, 60 + (H - 60) / 2, 42
+    body.append(f'<circle cx="{cx}" cy="{cy:.1f}" r="{r}" fill="none" stroke="{INK}" stroke-width="1" opacity="0.28" />'
+                f'<circle cx="{cx}" cy="{cy:.1f}" r="{r - 8}" fill="none" stroke="{INK}" stroke-width="0.8" stroke-dasharray="1 3.5" opacity="0.45" />'
+                f'<path d="{arc(cx, cy, r, prog)}" fill="none" stroke="{INK}" stroke-width="3" stroke-linecap="round" />'
+                f'<text class="rank" x="{cx}" y="{cy + 12:.1f}" text-anchor="middle">{escape(rank)}</text>')
+    art.ink("".join(body))
+    a = -math.pi / 2 + 2 * math.pi * prog
+    dot = f'<circle cx="{cx + r * math.cos(a):.1f}" cy="{cy + r * math.sin(a):.1f}" r="3.6" fill="{RED}" />'
+    art.color(dot, dot.replace(RED, NIGHT_RED))
+    art.color(*tag(-(W - 30), 18, "能力値"))
+    art.write(PROFILE, "stats")
+    print("wrote stats light/dark")
 
 
-def manga_overlay(w, h, seed, jelly=None, foam_bottom=True, extra=""):
-    """墨层上的装饰：内框细线、右上角网点、扫光、闪光、底边泡沫、樱花，可选一只小水母。"""
-    rng = random.Random(seed)
-    corner = f'<path d="M{w - 90:.0f} 1L{w - 1:.0f} 1L{w - 1:.0f} {min(90, h * 0.6):.0f}Z" fill="url(#toneFine)" opacity="0.45" />'
-    jf = jellyfish(f"c{seed}", *jelly, seed) if jelly else ""
-    bursts = "".join(kira(x, y, r, d) for x, y, r, d in [(w - 30, h - 26, 12, 0.3), (24, 22, 10, 1.5), (w * 0.62, 12, 8, 0.9)])
-    return (f'<g pointer-events="none">'
-            f'<rect x="5" y="5" width="{w - 10:.0f}" height="{h - 10:.0f}" rx="3" fill="none" stroke="{INK}" stroke-width="0.7" opacity="0.8" />'
-            f'{corner}{sweep(w, h, seed * 0.7)}{comet(w, h, 9.6, seed * 1.3)}{extra}{jf}{bursts}'
-            f'{foam(rng, 10, 12, w - 12, h - 8, h + 4, 1.6, 3.6, (14, 34), 0.25) if foam_bottom else ""}'
-            f'{petals(rng, 4, w * 0.05, w * 0.95, -10, h + 20)}'
-            f'{sparkles([(w - 26, 24, 5, 0), (w - 48, 40, 3.5, 1.2), (14, h - 16, 4, 2.2)])}</g>')
+# ---------------------------------------------------------------- 语言卡
+def top_langs():
+    svg = read("top-langs")
+    if not svg:
+        return
+    root, _ = parse(svg)
+    heads = tid(root, "header")
+    head = txt(heads[0]) if heads else "Most Used Languages"
+    widths = [float(r.get("width") or 0) for r in tid(root, "lang-progress")]
+    items = []
+    for k, el in enumerate(tid(root, "lang-name")):
+        name = txt(el)
+        parts = name.rsplit(" ", 1)
+        name, pct = (parts[0], parts[1]) if len(parts) == 2 and parts[1].endswith("%") else (name, "")
+        items.append((name, pct, widths[k] if k < len(widths) else 0))
+    if not items:
+        return
+    n = len(items)
+    rows = (n + 1) // 2
+    W = 370
+    H = max(200, 114 + rows * 24 + 26)
+    bold = load_font(SERIF, 700, head + "".join(p for _, p, _ in items) + "0123456789.%")
+    reg = load_font(SERIF, 400, "".join(nm for nm, _, _ in items))
+    jp = load_font(MINCHO, 800, "言語")
+    art = Art(W, H, f"{head}: " + ", ".join(f"{nm} {p}" for nm, p, _ in items), lean=True)
+    art.css.append(base_css([bold, reg, jp], f"  .pct {{ font: 700 12px {SERIF_STACK}; fill: {INK}; }}\n"))
+    X0, X1, BY, BH = 30, W - 30, 72, 10
+    total = sum(w for _, _, w in items) or 1
+    art.defs.append(f'<clipPath id="bar"><rect x="{X0}" y="{BY}" width="{X1 - X0}" height="{BH}" rx="{BH / 2}" /></clipPath>')
+    segs, x = [], X0
+    for k, (_, _, w) in enumerate(items):
+        sw = (X1 - X0) * w / total
+        segs.append(f'<rect x="{x + (0 if k == 0 else 0.8):.1f}" y="{BY}" width="{max(0, sw - (0.8 if k else 0) - (0.8 if k < n - 1 else 0)):.1f}" height="{BH}" fill="{FILLS[k % len(FILLS)]}" />')
+        x += sw
+    body = [card(W, H), f'<text class="h" x="{X0}" y="42">{escape(head)}</text>', rule(X0, X1, 56),
+            f'<g clip-path="url(#bar)">{"".join(segs)}</g>'
+            f'<rect x="{X0}" y="{BY}" width="{X1 - X0}" height="{BH}" rx="{BH / 2}" fill="none" stroke="{INK}" stroke-width="0.9" />']
+    col_w = (X1 - X0 - 14) / 2
+    for k, (name, pct, _) in enumerate(items):
+        col, row = k // rows, k % rows
+        x, y = X0 + col * (col_w + 14), 114 + row * 24
+        body.append(f'<rect x="{x:.1f}" y="{y - 9}" width="9" height="9" rx="1.5" fill="{FILLS[k % len(FILLS)]}" stroke="{INK}" stroke-width="0.8" />'
+                    f'<text class="d" x="{x + 16:.1f}" y="{y}">{escape(name)}</text>'
+                    f'<text class="pct" x="{x + col_w:.1f}" y="{y}" text-anchor="end">{escape(pct)}</text>')
+    art.ink("".join(body))
+    art.color(*tag(-(W - 30), 18, "言語"))
+    art.write(PROFILE, "top-langs")
+    print("wrote top-langs light/dark")
 
 
-def write_pair(name, root, body, overlay, accent, extra_css="", faces=(), under="", color=("", "")):
-    """外部生成的卡片本体套滤镜（浅色去色，深色去色后反相）；自己画的底层、装饰和红章直接按模式换色，不进滤镜。"""
-    own_css = BASE_CSS + KIRA_CSS + (JP.css() if JP else "") + extra_css
-    font_css = "".join(f.css() for f in faces)
-    for mode, flt in (("light", "mono"), ("dark", "night")):
-        conv = (lambda t: t) if mode == "light" else to_night
-        defs = conv(DEFS + BAND.replace("__BAND__", "0.8" if mode == "light" else "0.13"))
-        acc = accent if mode == "light" else accent.replace(RED, NIGHT_RED)
-        out = (f"{root}<style>{font_css}{conv(own_css)}</style><defs>{defs}</defs>{conv(under)}"
-               f"<g filter=\"url(#{flt})\">{body}</g>{color[0] if mode == 'light' else color[1]}{conv(overlay) if mode == 'light' else to_night(overlay).replace(RED, NIGHT_RED)}{acc}</svg>\n")
-        (PROFILE / f"{name}-{mode}.svg").write_text(out, encoding="utf-8")
+# ---------------------------------------------------------------- 置顶仓库卡
+def pin(name):
+    svg = read(name)
+    if not svg:
+        return
+    root, parents = parse(svg)
+    heads = tid(root, "header")
+    repo = txt(heads[0]) if heads else name
+    desc_el = next((t for t in root.iter(f"{NS}text") if "description" in (t.get("class") or "")), None)
+    desc = " ".join(t.strip() for t in desc_el.itertext() if t.strip()) if desc_el is not None else ""
+    langs, stars, forks = tid(root, "lang-name"), tid(root, "stargazers"), tid(root, "forkcount")
+    lang = txt(langs[0]) if langs else ""
+    star_n = txt(stars[0]) if stars else "0"
+    fork_n = txt(forks[0]) if forks else ""
+    star_d = (icon_path(stars[0], parents) if stars else None) or OCTICON["star"]
+    fork_d = (icon_path(forks[0], parents) if forks else None) or OCTICON["fork"]
+
+    W, H = 440, 150
+    bold = load_font(SERIF, 700, repo)
+    reg = load_font(SERIF, 400, desc + lang + star_n + fork_n + "0123456789 …")
+    jp = load_font(MINCHO, 800, "推し")
+    art = Art(W, H, f"{repo}: {desc}", lean=True)
+    art.css.append(base_css([bold, reg, jp]))
+    X0, X1 = 26, W - 26
+    lines = wrap(reg, desc, 12.5, X1 - X0, 2)
+    body = [card(W, H), icon(OCTICON["repo"], X0, 22, 1.0, 0.9), f'<text class="h" x="{X0 + 24}" y="36">{escape(repo)}</text>', rule(X0, X1, 52)]
+    body += [f'<text class="d" x="{X0}" y="{76 + k * 18}">{escape(ln)}</text>' for k, ln in enumerate(lines)]
+    y, x = 128, X0
+    if lang:
+        body.append(f'<circle cx="{x + 5}" cy="{y - 4}" r="4.5" fill="url(#tone)" stroke="{INK}" stroke-width="0.9" /><text class="d" x="{x + 16}" y="{y}">{escape(lang)}</text>')
+        x += 16 + (reg.width(lang, 12.5) if reg else 7 * len(lang)) + 22
+    body.append(icon(star_d, x, y - 12.5, 0.85, 0.85) + f'<text class="d" x="{x + 19}" y="{y}">{escape(star_n)}</text>')
+    x += 19 + (reg.width(star_n, 12.5) if reg else 8 * len(star_n)) + 22
+    if fork_n:
+        body.append(icon(fork_d, x, y - 12.5, 0.85, 0.85) + f'<text class="d" x="{x + 19}" y="{y}">{escape(fork_n)}</text>')
+    art.ink("".join(body))
+    art.color(*tag(-(W - 26), 16, "推し"))
+    art.write(PROFILE, name)
     print("wrote", name, "light/dark")
 
 
-def card(name, label, jelly=None):
-    path = PROFILE / f"{name}.svg"
-    if not path.exists():
+# ---------------------------------------------------------------- 活动折线图
+def activity():
+    svg = read("activity")
+    if not svg:
         return
-    svg, faces = serif(path.read_text(encoding="utf-8"))
-    if name == "stats":
-        svg = fit_stats(svg, faces)
-    w, h = size(svg)
-    root, body = split(svg)
-    lw = 17 * len(label) + 18
-    write_pair(name, root, body, manga_overlay(w, h, len(name), jelly, extra=card_motion(name, svg, w, h)), stamp(w - lw - 14, 14, lw, 24, label, 14), faces=faces)
+    pts = re.findall(r'<line x1="([\d.]+)" y1="([\d.]+)"[^>]*class="ct-point"[^>]*ct:value="([\d.]+)"', svg)
+    labels = re.findall(r'class="ct-label ct-horizontal[^"]*">([^<]*)</text>', svg)
+    values = [float(v) for _, _, v in pts]
+    n = len(values)
+    if n < 2:
+        return
+    labels = [lb.strip() for lb in labels][:n] + [""] * max(0, n - len(labels))
+    # 哪天是哪月：末尾那个日期对得上今天（前后一天内），就往回推
+    today = datetime.date.today()
+    start = None
+    if labels[-1].isdigit():
+        for d in (today - datetime.timedelta(days=1), today, today + datetime.timedelta(days=1)):
+            if d.day == int(labels[-1]):
+                start = d - datetime.timedelta(days=n - 1)
+                break
+    months = []
+    if start:
+        for i in range(n):
+            d = start + datetime.timedelta(days=i)
+            if d.day == 1 or (i == 0 and not any((start + datetime.timedelta(days=j)).day == 1 for j in range(1, 3))):
+                months.append((i, d.strftime("%b").upper()))
+
+    W, H = 1200, 380
+    head = "Activity Graph"
+    caption = f"CONTRIBUTIONS  ·  PAST {n} DAYS"
+    bold = load_font(SERIF, 700, head + "0123456789")
+    reg = load_font(SERIF, 400, caption + "0123456789" + "".join(m for _, m in months))
+    jp = load_font(MINCHO, 800, "活動記録")
+    art = Art(W, H, f"{head}: {caption.lower()}", lean=True)
+    art.css.append(base_css([bold, reg, jp], f"  .h {{ font-size: 20px; }}\n  .peak {{ font: 700 12px {SERIF_STACK}; fill: {RED}; }}\n"))
+    X0, X1 = 36, W - 36
+    tw = bold.width(head, 20) if bold else 150
+    px0, px1, py0, py1 = 86, W - 40, 98, 304
+    vmax = max(values) or 1
+    step = 5 if vmax <= 30 else (10 if vmax <= 80 else 20)
+    ymax = max(step, math.ceil(vmax / step) * step)
+    xs = [px0 + (px1 - px0) * i / (n - 1) for i in range(n)]
+    ys = [py1 - (py1 - py0) * v / ymax for v in values]
+    line = smooth(list(zip(xs, ys)))
+    body = [card(W, H), f'<text class="h" x="{X0}" y="44">{head}</text>',
+            f'<text class="s" x="{X1}" y="44" text-anchor="end">{caption}</text>', rule(X0, X1, 60)]
+    for t in range(0, ymax + 1, step):
+        y = py1 - (py1 - py0) * t / ymax
+        body.append(f'<path d="M{px0} {y:.1f}H{px1}" stroke="{INK}" stroke-width="0.6" stroke-dasharray="2 3" opacity="{0.6 if t == 0 else 0.3}" />'
+                    f'<text class="ax" x="{px0 - 14}" y="{y + 3.5:.1f}" text-anchor="end">{t}</text>')
+    body.append(f'<path d="{line}L{px1:.1f} {py1}L{px0:.1f} {py1}Z" fill="url(#toneFine)" opacity="0.45" />'
+                f'<path d="{line}" fill="none" stroke="{INK}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />')
+    body.append("".join(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="3" fill="{PAPER}" stroke="{INK}" stroke-width="1.2" />' for x, y in zip(xs, ys)))
+    body.append("".join(f'<text class="ax" x="{x:.1f}" y="{py1 + 22}" text-anchor="middle">{escape(lb)}</text>' for x, lb in zip(xs, labels)))
+    body.append("".join(f'<text class="s" x="{xs[i]:.1f}" y="{py1 + 42}" text-anchor="{"start" if i == 0 else "middle"}">{m}</text>' for i, m in months))
+    art.ink("".join(body))
+    k = values.index(vmax)
+    peak = (f'<circle cx="{xs[k]:.1f}" cy="{ys[k]:.1f}" r="4.6" fill="{RED}" />'
+            f'<text class="peak" x="{xs[k]:.1f}" y="{ys[k] - 13:.1f}" text-anchor="middle">{vmax:g}</text>')
+    art.color(peak, peak.replace(RED, NIGHT_RED))
+    art.color(*tag(X0 + tw + 14, 22, "活動記録"))
+    art.write(PROFILE, "activity")
+    print("wrote activity light/dark")
 
 
+# ---------------------------------------------------------------- 奖杯：上游的图去色，摆进同样的框
 def trophy():
-    path = PROFILE / "trophy.svg"
-    if not path.exists():
+    svg = read("trophy")
+    if not svg:
         return
-    svg, faces = serif(path.read_text(encoding="utf-8"))
     tw, th = size(svg)
-    _, body = split(svg)
-    spans, depth, start = [], 0, None
-    for m in re.finditer(r"<svg\b|</svg>", body):
-        if m.group() == "<svg":
-            if depth == 0:
-                start = m.start()
+    _, inner = split(svg)
+    count, depth = 0, 0
+    for m in re.finditer(r"<svg\b[^>]*>|</svg>", inner):  # 只数最外层、露在画面里的奖杯格子（上游多画的几行被裁掉了）
+        if m.group().startswith("<svg"):
+            y = re.search(r'\by="([\d.]+)"', m.group())
+            count += depth == 0 and (not y or float(y.group(1)) < th)
             depth += 1
         else:
             depth -= 1
-            if depth == 0 and start is not None:
-                spans.append((start, m.end()))
-    xs = []
-    for k, (a, b) in reversed(list(enumerate(spans))):
-        x = float(re.search(r'\bx="([\d.]+)"', body[a:a + 200]).group(1))
-        xs.append(x)
-        body = body[:a] + f'<g class="tb" style="animation-delay:{-k * 0.4:.2f}s;transform-origin:{x + 55:.0f}px 100px">' + body[a:b] + "</g>" + body[b:]
-    xs.sort()
-    L, T = 54, 46
-    w, h = tw + L * 2, th + T + 40
-    rng = random.Random(3)
-    root = f'<svg xmlns="http://www.w3.org/2000/svg" width="{w:.0f}" height="{h:.0f}" viewBox="0 0 {w:.0f} {h:.0f}" role="img" aria-label="GitHub Trophies">'
-    shelf_y = T + th + 4
-    under = (f'<rect x="2" y="2" width="{w - 4:.0f}" height="{h - 4:.0f}" rx="6" fill="{PAPER}" /><rect x="2" y="2" width="{w - 4:.0f}" height="{h - 4:.0f}" rx="6" filter="url(#grain)" />'
-             f'<rect x="2" y="2" width="{w - 4:.0f}" height="{T - 8}" fill="url(#toneFine)" opacity="0.2" />'
-             f'<text x="{L}" y="27" class="tmeta">TROPHY CABINET  ·  SUMMER 2026</text>'
-             f'<text x="{w - L:.0f}" y="27" class="tmeta" text-anchor="end">全 6 種  ·  COLLECT THEM ALL</text>'
-             f'<rect x="{L - 16}" y="{shelf_y}" width="{tw + 32:.0f}" height="7" rx="1.5" fill="{PAPER}" stroke="{INK}" stroke-width="1.4" />'
-             f'<rect x="{L - 12}" y="{shelf_y + 7}" width="{tw + 24:.0f}" height="12" fill="url(#hatch)" opacity="0.6" />'
-             + "".join(f'<path d="M{x + L + 55:.0f} {shelf_y + 7}l-6 14h12z" fill="{INK}" opacity="0.7" />' for x in xs[::2]))
-    body = f'<svg x="{L}" y="{T}" width="{tw:.0f}" height="{th:.0f}" viewBox="0 0 {tw:.0f} {th:.0f}">{body}</svg>'
-    bursts = "".join(kira(L + x + 55 + rng.uniform(-38, 38), T + rng.uniform(4, 40), rng.uniform(9, 14), k * 0.4 + rng.uniform(0, 0.3)) for k, x in enumerate(xs))
-    overlay = (f'<g pointer-events="none">{sweep(w, h, 0.0, 70)}{comet(w, h, 12.8, 0, 8)}{bursts}'
-               f'{chime("tl", 26, 2, 0.62)}{chime("tr", round(w - 26), 2, 0.62, "風")}'
-               f'{foam(rng, 18, L, w - L, shelf_y + 6, h - 6, 1.8, 4.5, (30, 90), 0.3)}'
-               f'{petals(rng, 7, 40, w - 60, -10, h + 20)}'
-               f'{sparkles([(L + x + 55 + 46, T + 70, 4, k * 0.5) for k, x in enumerate(xs)])}'
-               f'<rect x="2" y="2" width="{w - 4:.0f}" height="{h - 4:.0f}" rx="6" fill="none" stroke="{INK}" stroke-width="3" />'
-               f'<rect x="8" y="8" width="{w - 16:.0f}" height="{h - 16:.0f}" rx="3" fill="none" stroke="{INK}" stroke-width="0.7" /></g>')
-    css = f"""
-  .tb {{ animation: tbFloat 3.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; }}
-  @keyframes tbFloat {{ 0%, 100% {{ transform: translateY(0) rotate(0deg); }} 35% {{ transform: translateY(-4px) rotate(-1.5deg); }} 70% {{ transform: translateY(-1px) rotate(1deg); }} }}
-  .tmeta {{ font: 400 10.5px {SERIF_STACK}, {MINCHO_STACK}; fill: {INK}; letter-spacing: 3px; }}
-"""
-    meta_font = load_font(SERIF, 400, "TROPHY CABINET · SUMMER 2026 COLLECT THEM ALL")
-    write_pair("trophy", root, body, overlay, stamp(w / 2 - 34, 12, 68, 22, "実績", 13), css, list(faces) + ([meta_font] if meta_font else []), under)
-
-
-def path_points(d):
-    """chartist 折线只用 M 和 C：返回每段终点（数据点）处的累计弧长、总长。"""
-    nums = [float(v) for v in re.findall(r"-?[\d.]+", d)]
-    x, y = nums[0], nums[1]
-    acc, marks, i = 0.0, [(x, y, 0.0)], 2
-    while i + 5 < len(nums) + 1 and i + 6 <= len(nums):
-        x1, y1, x2, y2, x3, y3 = nums[i:i + 6]
-        px, py = x, y
-        for t in (k / 24 for k in range(1, 25)):
-            u = 1 - t
-            qx = u ** 3 * x + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t ** 3 * x3
-            qy = u ** 3 * y + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t ** 3 * y3
-            acc += math.hypot(qx - px, qy - py)
-            px, py = qx, qy
-        x, y = x3, y3
-        marks.append((x, y, acc))
-        i += 6
-    return marks, acc
-
-
-def activity():
-    path = PROFILE / "activity.svg"
-    if not path.exists():
-        return
-    svg, faces = serif(path.read_text(encoding="utf-8"))
-    w, h = size(svg)
-    root, body = split(svg)
-    m = re.search(r'<path d="([^"]+)"[^>]*class="ct-line"', svg)
-    extra = ""
-    if m:
-        d = m.group(1)
-        marks, total = path_points(d)
-        dur = 9.6
-        base_y = max(y for _, y, _ in marks)
-        area = f'{d}L{marks[-1][0]:.1f} {base_y:.1f}L{marks[0][0]:.1f} {base_y:.1f}Z'
-        rings = []
-        top = sorted(range(len(marks)), key=lambda i: marks[i][1])[:3]
-        for i, (x, y, a) in enumerate(marks):
-            arrive = dur * a / total
-            rings.append(f'<circle class="rip" cx="{x:.1f}" cy="{y:.1f}" r="5" fill="none" stroke="{INK}" stroke-width="1.2" vector-effect="non-scaling-stroke" '
-                         f'style="--s:2.8;animation-duration:{dur}s;animation-name:ripOnce;animation-delay:{arrive - dur:.2f}s" />')
-            if i in top:
-                rings.append(kira(x, y - 18, 16, dur - arrive, dur).replace('class="kira" style="animation-duration', 'class="kira kira1" style="animation-duration'))
-        motion = f'<animateMotion dur="{dur}s" repeatCount="indefinite" calcMode="paced" path="{d}" />'
-        extra = (f'<path d="{area}" fill="url(#tone)" opacity="0.32" class="areaflow" />'
-                 f'<path d="{d}" pathLength="1000" class="acomet halo" fill="none" stroke="{PAPER}" stroke-width="9" stroke-linecap="round" style="animation-duration:{dur}s" />'
-                 f'<path d="{d}" pathLength="1000" class="acomet" fill="none" stroke="{RED}" stroke-width="3.4" stroke-linecap="round" style="animation-duration:{dur}s" />'
-                 f'{"".join(rings)}'
-                 f'<g><circle r="9" fill="none" stroke="{RED}" stroke-width="1" opacity="0.5">{motion}</circle><circle r="5" fill="{PAPER}" stroke="{RED}" stroke-width="2.2">{motion}</circle></g>')
-    css = f"""
-  .ct-line {{ animation: none !important; stroke-dashoffset: 0 !important; stroke-dasharray: none !important; }}
-  .ct-point {{ animation: none !important; }}
-  .acomet {{ stroke-dasharray: 90 1910; animation: acomet linear infinite; }}
-  .acomet.halo {{ opacity: 0.9; }}
-  @keyframes acomet {{ from {{ stroke-dashoffset: 90; }} to {{ stroke-dashoffset: -910; }} }}
-  @keyframes ripOnce {{ 0% {{ opacity: 0; transform: scale(1); }} 1% {{ opacity: 0.9; }} 14%, 100% {{ opacity: 0; transform: scale(var(--s, 2.4)); }} }}
-  .kira1 {{ animation-name: kiraOnce !important; }}
-  @keyframes kiraOnce {{ 0% {{ opacity: 0; transform: scale(0.2); }} 2% {{ opacity: 1; }} 16%, 100% {{ opacity: 0; transform: scale(1) rotate(12deg); }} }}
-"""
-    # 图表上方空着的地方放夏祭り的花火（在折线下面，浅色用白天的墨色系，深色用夜里的亮色系）
-    spots = [(240, 128, 52, "kiku"), (405, 96, 36, "botan"), (648, 112, 34, "wa"), (822, 118, 42, "botan"),
-             (1040, 126, 50, "kamuro"), (300, 220, 30, "wa"), (760, 214, 28, "kiku"), (1150, 214, 30, "jelly")]
-    fl = festival("al", spots, random.Random(8), "light", (4.8, 6.4), 140)
-    fd = festival("ad", spots, random.Random(8), "dark", (4.8, 6.4), 140)
-    fw = ('<defs>{}</defs><g style="mix-blend-mode:{}" opacity="{}">{}</g>'.format(fl[0], "multiply", 0.85, fl[1]),
-          '<defs>{}</defs><g style="mix-blend-mode:{}" opacity="{}">{}</g>'.format(fd[0], "screen", 0.9, fd[1]))
-    write_pair("activity", root, body, manga_overlay(w, h, 7, (w - 70, 54, 0.55, 0.8, 0.6), extra=extra), stamp(40, 22, 86, 26, "活動記録", 14), css, faces,
-               color=fw)
+    L, T = 40, 44
+    W, H = tw + 2 * L, T + th + 46
+    reg = load_font(SERIF, 400, "TROPHY CABINET · COLLECT THEM ALL 0123456789")
+    jp = load_font(MINCHO, 800, "実績全種")
+    tag_w = int(13 * 1.15 * 2 + 18)
+    right = f"全 {count} 種  ·  COLLECT THEM ALL" if count else "COLLECT THEM ALL"
+    css = base_css([reg, jp])
+    shelf_y = T + th + 3
+    under = (card(W, H) + f'<text class="s" x="{L}" y="30">TROPHY CABINET</text>'
+             f'<text class="s" x="{W - 30 - tag_w - 16:.0f}" y="30" text-anchor="end">{right}</text>'
+             f'<rect x="{L - 14}" y="{shelf_y}" width="{tw + 28:.0f}" height="2.5" fill="{INK}" />'
+             f'<rect x="{L - 10}" y="{shelf_y + 2.5}" width="{tw + 20:.0f}" height="9" fill="url(#hatch)" opacity="0.55" />')
+    body = f'<svg x="{L}" y="{T}" width="{tw:.0f}" height="{th:.0f}" viewBox="0 0 {tw:.0f} {th:.0f}">{inner}</svg>'
+    root = (f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{W:.0f}" height="{H:.0f}" '
+            f'viewBox="0 0 {W:.0f} {H:.0f}" role="img" aria-label="GitHub Trophies">')
+    light, dark = tag(-(W - 30), 18, "実績")
+    for mode, flt in (("light", "mono"), ("dark", "night")):
+        conv = (lambda t: t) if mode == "light" else to_night
+        out = (f"{root}\n<style>{conv(css)}</style>\n<defs>{conv(DEFS)}</defs>\n{conv(under)}"
+               f'<g filter="url(#{flt})">{body}</g>{light if mode == "light" else dark}\n</svg>\n')
+        (PROFILE / f"trophy-{mode}.svg").write_text(out, encoding="utf-8")
+    print("wrote trophy light/dark")
 
 
 # ---------------------------------------------------------------- 贪吃蛇：白蛇吃网点草，草过一会儿又长回来
@@ -371,19 +445,14 @@ def snake():
         return
     svg = raw.read_text(encoding="utf-8")
     C, cells, pts = snake_data(svg)
-    pad, top = 26, 92
-    w, h = 932, 300
-    gx, gy = 42, 118
-    rng = random.Random(5)
-    title_font = load_font(SERIF, 700, "Contribution Snake")
-    small = load_font(SERIF, 400, "0123456789A▸ · GITHUB FILM 365 JanFebMarAprMayJunJulAugSepOctNovDec MonWedFri Less More")
-    title, tl, tw = letters(title_font, "Contribution Snake", 28, pad + 96, 58, "zt float", step=0.06, anchor="start") if title_font else ("", 0, 0)
-    jp_w = JP.width("草を食べる蛇・365日", 14, 4) if JP else 0
-    jp = letters(JP, "草を食べる蛇・365日", 14, w - pad - jp_w - 110, 58, "zj", spacing=4, step=0, anchor="start")[0] if JP else ""
-    root = f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{w}" height="{h}" viewBox="0 0 {w} {h}" role="img" aria-label="Contribution snake">'
+    W, H = 932, 258
+    gx, gy = 42, 98
+    head_txt, jp_txt, foot_txt = "Contribution Snake", "草を食べる蛇  ·  365日", "SHIROHEBI  ·  一年分の草を食べる白蛇、草はまた生える"
+    bold = load_font(SERIF, 700, head_txt)
+    reg = load_font(SERIF, 400, "JanFebMarAprMayJunJulAugSepOctNovDec MonWedFri Less More SHIROHEBI · 0123456789")
+    jp = load_font(MINCHO, 800, jp_txt + foot_txt + "連載中")
+    art = Art(W, H, "Contribution snake", lean=True)
 
-    # 月份与星期
-    import datetime
     today = datetime.date.today()
     cols = int(max(c[0] for c in cells) // 16) + 1
     months, last = [], None
@@ -392,74 +461,59 @@ def snake():
         if day.month != last and k < cols - 2:
             months.append(f'<text class="zm" x="{gx + k * 16 + 2}" y="{gy - 12}">{day.strftime("%b")}</text>')
         last = day.month
-    days = "".join(f'<text class="zm" x="{gx - 8}" y="{gy + r * 16 + 11}" text-anchor="end">{n}</text>' for r, n in ((1, "Mon"), (3, "Wed"), (5, "Fri")))
+    days = "".join(f'<text class="zm" x="{gx - 8}" y="{gy + r * 16 + 11}" text-anchor="end">{nm}</text>' for r, nm in ((1, "Mon"), (3, "Wed"), (5, "Fri")))
     grid = "".join(f"M{gx + x - 0.9:.1f} {gy + y:.1f}a0.9 0.9 0 1 0 1.8 0a0.9 0.9 0 1 0 -1.8 0" for x, y, _, _ in cells)
-    grass, rings = [], []
+    grass = []
     for x, y, lv, e in cells:
-        if not lv:
-            continue
-        delay = (e if e is not None else 0) * C - C
-        grass.append(f'<circle class="gd" cx="{gx + x:.1f}" cy="{gy + y:.1f}" r="{LEVEL_R[lv]}" style="animation-delay:{delay:.2f}s" />')
-        rings.append(f'<circle class="gr" cx="{gx + x:.1f}" cy="{gy + y:.1f}" r="5" style="animation-delay:{delay:.2f}s" />')
-    legend = "".join(f'<circle cx="{w - 150 + i * 16}" cy="{gy + 132}" r="{max(LEVEL_R[i], 1)}" fill="{INK}" opacity="{0.3 if i == 0 else 1}" />' for i in range(5))
+        if lv:
+            delay = (e if e is not None else 0) * C - C
+            grass.append(f'<circle class="gd" cx="{gx + x:.1f}" cy="{gy + y:.1f}" r="{LEVEL_R[lv]}" style="animation-delay:{delay:.2f}s" />')
+    ly = gy + 6 * 16 + 32
+    legend = "".join(f'<circle cx="{W - 150 + i * 16}" cy="{ly - 4}" r="{max(LEVEL_R[i], 1)}" fill="{INK}" opacity="{0.3 if i == 0 else 1}" />' for i in range(5))
     pos, head_kf = snake_keyframes(pts)
-    beads = []
-    n = 12
+    beads, n = [], 12
     for k in range(n, 0, -1):
         r = 6.3 - 3.6 * (k - 1) / (n - 1)
         beads.append(f'<g class="zb" style="animation-delay:{0.055 * k * 1.15 - C:.3f}s"><circle r="{r:.1f}" fill="{PAPER}" stroke="{INK}" stroke-width="1.1" />'
                      f'<circle r="{r * 0.5:.1f}" cx="{r * 0.18:.1f}" cy="{r * 0.18:.1f}" fill="url(#toneFine)" /></g>')
-    head = (f'<g class="zh" style="animation-delay:{-C:.2f}s"><g class="tongue"><path d="M8 0H15.5M15.5 0l3.2 -2.6M15.5 0l3.2 2.6" fill="none" stroke="{RED}" stroke-width="1.3" stroke-linecap="round" /></g>'
+    head = (f'<g transform="translate({gx} {gy})"><g class="zh" style="animation-delay:{-C:.2f}s"><g class="tongue"><path d="M8 0H15.5M15.5 0l3.2 -2.6M15.5 0l3.2 2.6" fill="none" stroke="{RED}" stroke-width="1.3" stroke-linecap="round" /></g>'
             f'<path d="M-8.5 -6C-2 -8.6 6.5 -6.6 9.6 0C6.5 6.6 -2 8.6 -8.5 6C-10.4 2.4 -10.4 -2.4 -8.5 -6Z" fill="{PAPER}" stroke="{INK}" stroke-width="1.4" stroke-linejoin="round" />'
             f'<path d="M-6 -3.4Q-3.6 0 -6 3.4" fill="none" stroke="{INK}" stroke-width="0.7" />'
             f'<circle cx="3.2" cy="-3.3" r="1.6" fill="{INK}" /><circle cx="3.2" cy="3.3" r="1.6" fill="{INK}" />'
             f'<circle cx="3.7" cy="-3.8" r="0.5" fill="{PAPER}" /><circle cx="3.7" cy="2.8" r="0.5" fill="{PAPER}" />'
-            f'<ellipse cx="0.5" cy="-5.2" rx="1.6" ry="0.8" fill="{RED}" opacity="0.55" /><ellipse cx="0.5" cy="5.2" rx="1.6" ry="0.8" fill="{RED}" opacity="0.55" /></g>')
-    under = f"""<rect x="2" y="2" width="{w - 4}" height="{h - 4}" rx="6" fill="{PAPER}" />
-<rect x="2" y="2" width="{w - 4}" height="{h - 4}" rx="6" filter="url(#grain)" />
-<rect x="2" y="2" width="{w - 4}" height="74" fill="url(#toneFine)" opacity="0.18" />
-<line x1="2" y1="76" x2="{w - 2}" y2="76" stroke="{INK}" stroke-width="1.6" />
-<line x1="2" y1="80" x2="{w - 2}" y2="80" stroke="{INK}" stroke-width="0.6" />
-{"".join(months)}{days}
-<path d="{grid}" fill="{INK}" opacity="0.28" />
-<text class="zm" x="{w - 162}" y="{gy + 136}" text-anchor="end">Less</text>{legend}<text class="zm" x="{w - 72}" y="{gy + 136}">More</text>
-<text class="zm" x="{gx}" y="{gy + 136}">SHIROHEBI  ·  一年分の草を食べる白蛇、草はまた生える</text>"""
-    overlay = (f'<g pointer-events="none">{sweep(w, 80, 1.0, 80)}'
-               f'{title_fx(title, 2.5, 0.8)}{jp}'
-               f'{chime("zs", round(w - 60), 2, 0.68)}{jellyfish("zj1", w - 150, 30, 0.3, 0.6, 0.45, 4)}'
-               f'<g>{"".join(grass)}</g><g>{"".join(rings)}</g>'
-               f'<g transform="translate({gx} {gy})">{"".join(beads)}{head}</g>'
-               f'{petals(rng, 6, 20, w - 80, 70, h - 40)}'
-               f'{sparkles([(pad + 14, 30, 5, 0.2), (w * 0.55, 24, 4, 1.4), (w - 24, h - 50, 5, 2.4)])}'
-               f'<g clip-path="url(#zclip)">{film_strip(h - 34, w, 30, "GITHUB FILM 365")}</g>'
-               f'<rect x="2" y="2" width="{w - 4}" height="{h - 4}" rx="6" fill="none" stroke="{INK}" stroke-width="3.2" /></g>')
-    css = f"""
-  .zt {{ font: 700 28px {SERIF_STACK}; fill: url(#zsheen); stroke: {PAPER}; stroke-width: 2.5px; paint-order: stroke; }}
-  .zj {{ font: 800 14px {MINCHO_STACK}; fill: {INK}; }}
+            f'<ellipse cx="0.5" cy="-5.2" rx="1.6" ry="0.8" fill="{RED}" opacity="0.55" /><ellipse cx="0.5" cy="5.2" rx="1.6" ry="0.8" fill="{RED}" opacity="0.55" /></g></g>')
+    art.css.append(base_css([bold, reg, jp], f"""
+  .zj {{ font: 800 12px {MINCHO_STACK}; fill: {GRAY}; letter-spacing: 3px; }}
   .zm {{ font: 400 9.5px {SERIF_STACK}, {MINCHO_STACK}; fill: {INK}; opacity: 0.7; letter-spacing: 1px; }}
-  .filmtxt {{ font: 400 9px {SERIF_STACK}; fill: {PAPER}; letter-spacing: 2.5px; }}
-  .gd {{ fill: {INK}; transform-box: fill-box; transform-origin: center; animation: gd {C}s linear infinite; }}
-  @keyframes gd {{ 0% {{ transform: scale(1); opacity: 1; animation-timing-function: {EASE_OUT}; }} 1.4% {{ transform: scale(1.9); opacity: 0; }}
-    28% {{ transform: scale(0); opacity: 0; animation-timing-function: {EASE_OUT}; }} 31% {{ transform: scale(1.18); opacity: 1; }} 33%, 100% {{ transform: scale(1); opacity: 1; }} }}
-  .gr {{ fill: none; stroke: {INK}; stroke-width: 1; transform-box: fill-box; transform-origin: center; opacity: 0; animation: gr {C}s linear infinite; }}
-  @keyframes gr {{ 0% {{ opacity: 0; transform: scale(0.4); animation-timing-function: {EASE_OUT}; }} 0.3% {{ opacity: 0.9; }} 3.5% {{ opacity: 0; transform: scale(2.8); }} 100% {{ opacity: 0; }} }}
+  .zf {{ font: 400 9.5px {SERIF_STACK}, {MINCHO_STACK}; fill: {INK}; opacity: 0.7; letter-spacing: 1px; }}
+  .gd {{ fill: {INK}; animation: gd {C}s linear infinite; }}
+  @keyframes gd {{ 0% {{ opacity: 1; }} 1.2% {{ opacity: 0; }} 27% {{ opacity: 0; }} 31%, 100% {{ opacity: 1; }} }}
   .zb {{ animation: zb {C}s linear infinite; }}
   @keyframes zb {{ {pos} }}
   .zh {{ animation: zh {C}s linear infinite; }}
   @keyframes zh {{ {head_kf} }}
   .tongue {{ transform-origin: 8px 0; animation: tongue 1.6s {EASE} infinite; }}
   @keyframes tongue {{ 0%, 55% {{ transform: scaleX(0); }} 65% {{ transform: scaleX(1); }} 72% {{ transform: scaleX(0.35); }} 80% {{ transform: scaleX(1); }} 92%, 100% {{ transform: scaleX(0); }} }}
-"""
-    extra_defs = sheen_grad("zsheen", tl, tl + tw, 6.4, 2.0, 40) + f'<clipPath id="zclip"><rect x="3" y="3" width="{w - 6}" height="{h - 6}" rx="5" /></clipPath>'
-    write_pair("snake", root, "", f"<defs>{extra_defs}</defs>" + overlay, stamp(pad, 38, 76, 28, "連載中", 15), css,
-               [f for f in (title_font, small) if f], under)
+"""))
+    tag_w = int(13 * 1.15 * 3 + 18)
+    art.ink(card(W, H) + f'<text class="h" x="30" y="42" style="font-size:20px">{head_txt}</text>'
+            f'<text class="zj" x="{W - 30 - tag_w - 18}" y="42" text-anchor="end">{jp_txt}</text>' + rule(30, W - 30, 60)
+            + "".join(months) + days + f'<path d="{grid}" fill="{INK}" opacity="0.28" />'
+            + f'<text class="zf" x="{W - 162}" y="{ly}" text-anchor="end">Less</text>{legend}<text class="zf" x="{W - 72}" y="{ly}">More</text>'
+            f'<text class="zf" x="{gx}" y="{ly}">{foot_txt}</text>'
+            f'<g>{"".join(grass)}</g><g transform="translate({gx} {gy})">{"".join(beads)}</g>')
+    art.color(head, to_night(head).replace(RED, NIGHT_RED))
+    art.color(*tag(-(W - 30), 18, "連載中"))
+    art.write(PROFILE, "snake")
+    print("wrote snake light/dark")
 
 
 if __name__ == "__main__":
-    card("stats", "能力値")
-    card("top-langs", "言語")
-    card("pin-typewriter-nocturne", "推し", (352, 84, 0.4, 0.5, 0.45))
-    card("pin-yohaku", "推し", (352, 84, 0.4, 1.6, 0.45))
+    stats()
+    top_langs()
+    for path in sorted(PROFILE.glob("pin-*.svg")):
+        if not path.stem.endswith(("-light", "-dark")):
+            pin(path.stem)
     trophy()
     activity()
     snake()

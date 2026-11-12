@@ -1,24 +1,26 @@
 #!/usr/bin/env python3
-"""主页上手工设计的动态 SVG（黑白漫画风，和 me 站点“週刊ユキ”同一套语言）。
+"""主页上手工设计的 SVG（黑白漫画风，和 me 站点“週刊ユキ”同一套语言）。
 
 每张图出浅色、深色两版（*-light.svg / *-dark.svg），README 用 <picture> 按访客主题切换。
 改了文字或效果后在仓库根目录运行 `python3 .github/scripts/make_art.py`，再提交 profile/。
 只重做其中几张：`python3 .github/scripts/make_art.py header quote`。需要联网取字体（Google Fonts，只取用到的字）。
 
-动画的约定：节拍统一在 1.6 秒的倍数上；所有循环用负延迟错开相位，
-任何时刻定格，主体（字、景物）都完整可见，只有粒子在流动，不出现空白帧，也不用闪烁。
+性能上的约定：只有头图、结尾和世界线台词条保留少量很轻的环境动画（风铃、电线、雨、字面扫光），
+漫画页、分区标题、分隔线和播放卡全部是静态图；不再有漂浮的水母、泡沫、花瓣，也不再用颗粒滤镜。
 """
 import base64
 import math
 import pathlib
 import random
+import re
 import sys
+from html import escape
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
-from manga import (EASE, EASE_OUT, GRAY, INK, MINCHO, MINCHO_STACK, NIGHT_INK, NIGHT_RED, PAPER, RED, SERIF,  # noqa: E402
-                   SERIF_STACK, Art, barcode, chime, cloud, fence, festival, film_strip, foam, jellyfish, lens_flare,
-                   letters, load_font, morph, music_note, petals, pole, rain_field, sheen_grad, smooth, sparkles, splash,
-                   splashes, stamp, starburst, sun, sun_ink, sun_rays, sun_rings, title_fx, wagasa, wire, wire_point)
+from manga import (EASE, EASE_OUT, GRAY, INK, MINCHO, MINCHO_STACK, NIGHT_INK, NIGHT_RED, PAPER, RED, SCHEMES, SERIF,  # noqa: E402
+                   SERIF_STACK, Art, barcode, chime, cloud, fence, film_strip, firework, lens_flare, letters, load_font,
+                   pole, rain_field, sheen_grad, splash, splashes, stamp, starburst, sun, sun_ink, sun_rays, title_fx,
+                   wagasa, wire, wire_point)
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 OUT = ROOT / "profile"
@@ -32,12 +34,12 @@ QUOTES = ["> Initializing World Line 1.048596 ...", "もし世界がバグなら
 TONE_GRAY_SKY = "#e6e5e1"  # A 格白天的天空：比纸略深
 NIGHT_INK_SFX = "#eceae6"
 WORLDLINES = ["1.048596", "0.571024", "0.523299", "1.130205", "0.337187", "1.382733", "0.000000"]
+TRACK = ("Hitchcock", "Yorushika", "ヨルシカ")  # 播放卡上的曲子
 
 
 def panel(w, h, rx=6):
-    """漫画分格：纸、颗粒。"""
-    return (f'<rect x="4" y="4" width="{w - 8}" height="{h - 8}" rx="{rx}" fill="{PAPER}" />'
-            f'<rect x="4" y="4" width="{w - 8}" height="{h - 8}" rx="{rx}" filter="url(#grain)" />')
+    """漫画分格：纸。"""
+    return f'<rect x="4" y="4" width="{w - 8}" height="{h - 8}" rx="{rx}" fill="{PAPER}" />'
 
 
 def frame(w, h, rx=6):
@@ -46,23 +48,36 @@ def frame(w, h, rx=6):
             f'<rect x="11" y="11" width="{w - 22}" height="{h - 22}" rx="{max(rx - 4, 1)}" fill="none" stroke="{INK}" stroke-width="0.9" />')
 
 
+def card(w, h, rx=6):
+    """内页卡片：纸、细边、再一圈发丝线。"""
+    return (f'<rect x="1.5" y="1.5" width="{w - 3}" height="{h - 3}" rx="{rx}" fill="{PAPER}" />'
+            f'<rect x="1.5" y="1.5" width="{w - 3}" height="{h - 3}" rx="{rx}" fill="none" stroke="{INK}" stroke-width="1.5" />'
+            f'<rect x="6.5" y="6.5" width="{w - 13}" height="{h - 13}" rx="{max(rx - 3, 1)}" fill="none" stroke="{INK}" stroke-width="0.6" opacity="0.7" />')
+
+
 def text_css(fonts, extra=""):
-    return "".join(f.css() for f in fonts) + extra
+    return "".join(f.css() for f in fonts if f) + extra
 
 
 def inside(w, h):
     return f'<clipPath id="inside"><rect x="12" y="12" width="{w - 24}" height="{h - 24}" rx="3" /></clipPath>'
 
 
+def tag(x, y, label, size=13, h=24):
+    """红色印章标签，返回 (浅色, 深色)。"""
+    w = int(size * 1.15 * len(label) + 18)
+    s = stamp(x - w if x < 0 else x, y, w, h, label, size)
+    return s, s.replace(RED, NIGHT_RED)
+
+
 # ---------------------------------------------------------------- 头图：夕焼けの屋上
 def header(F):
     W, H = 1200, 430
-    rng = random.Random(4)
     art = Art(W, H, "Hi there, I am Yuki")
     SX, SY, SR = 948, 200, 86
-    title, tl, tw = letters(F["black"], "HI THERE", 118, 54, 200, "hero float", spacing=3, step=0.12, anchor="start")
-    name, _, nw = letters(F["regular"], "— I am Yuki —", 32, 60, 252, "name float", spacing=1.5, step=0.09, anchor="start")
-    jp, jl, jw = letters(F["jp"], HEAD_JP, 21, 92, 292, "jp float", spacing=6, step=0.1, anchor="start")
+    title, tl, tw = letters(F["black"], "HI THERE", 118, 54, 200, "hero", spacing=3, step=0, anchor="start")
+    name, _, nw = letters(F["regular"], "— I am Yuki —", 32, 60, 252, "name", spacing=1.5, step=0, anchor="start")
+    jp, jl, jw = letters(F["jp"], HEAD_JP, 21, 92, 292, "jp", spacing=6, step=0, anchor="start")
     burst_txt, _, _ = letters(F["jp"], "新連載!!", 17, tl + tw + 66, 102, "bt", spacing=0, step=0)
     sign_txt = "".join(f'<text x="0" y="{18 + i * 19}" text-anchor="middle" class="sign">{c}</text>' for i, c in enumerate(SIGN))
     art.css.append(text_css(F.values(), f"""
@@ -79,11 +94,10 @@ def header(F):
                     + f'<radialGradient id="rayFade" gradientUnits="userSpaceOnUse" cx="{SX}" cy="{SY}" r="620"><stop offset="0.1" stop-color="#fff" /><stop offset="1" stop-color="#fff" stop-opacity="0" /></radialGradient>'
                     f'<mask id="rayMask"><rect width="{W}" height="{H}" fill="url(#rayFade)" /></mask>')
 
-    # 远景：天空网点、放射线、日轮外的光圈
+    # 远景：天空网点、放射线（静止）
     art.ink(panel(W, H) + f"""<g clip-path="url(#inside)">
   <rect x="12" y="44" width="{W - 24}" height="190" fill="url(#tone)" opacity="0.42" mask="url(#toneUp)" />
-  <g mask="url(#rayMask)">{sun_rays(SX, SY, 48, SR + 16, 1100, 0.12)}</g>
-  {sun_rings(SX, SY, SR + 6)}
+  <g mask="url(#rayMask)">{sun_rays(SX, SY, 48, SR + 16, 1100, 0.12).replace('class="spin" ', '')}</g>
 </g>""")
     light, dark = sun("H", SX, SY, SR)
     art.color(f'<g clip-path="url(#inside)">{light}</g>', f'<g clip-path="url(#inside)">{dark}</g>')
@@ -104,20 +118,13 @@ def header(F):
   {big}
   <g transform="translate(1098 230)"><rect x="-15" y="0" width="30" height="64" fill="{PAPER}" stroke="{INK}" stroke-width="1.6" />{sign_txt}<rect x="-15" y="64" width="30" height="20" fill="{INK}" /><text x="0" y="79" text-anchor="middle" class="filmtxt" style="font-size:12px">12</text></g>
   {chime("H", round(hx), round(hy), 1.15)}
-  {jellyfish("h1", 760, 226, 0.78, 0.0, 0.95, 1)}
-  {jellyfish("h2", 548, 76, 0.36, 1.1, 0.7, 2)}
-  {jellyfish("h3", 330, 318, 0.3, 2.3, 0.6, 3)}
-  {jellyfish("h4", 1040, 292, 0.42, 1.7, 0.7, 4)}
 </g>""")
-    art.color(lens_flare(SX, SY, 360, 330, "light"), lens_flare(SX, SY, 360, 330, "dark"))
+    art.color(lens_flare(SX, SY, 360, 330, "light").replace('class="flare"', ''), lens_flare(SX, SY, 360, 330, "dark").replace('class="flare"', ''))
 
-    # 近景：天台的金网、胶片边、泡沫和樱花
+    # 近景：天台的金网、胶片边
     art.ink(f"""<g clip-path="url(#inside)">
   {fence("H", 12, W - 12, 318, 388, [96, 420, 760, 1188])}
   {film_strip(388, W)}
-  {foam(rng, 44, 30, W - 30, 300, 400, 2.5, 11, (140, 330))}
-  {petals(rng, 22, 20, W - 140, -10, 420)}
-  {sparkles([(250, 96, 8, 0), (700, 330, 7, 1.1), (1170, 300, 6, 2.2), (835, 60, 7, 0.6), (40, 250, 6, 1.7)])}
 </g>
 <rect x="12" y="12" width="{W - 24}" height="32" fill="{INK}" />
 <text class="bar" x="30" y="32.5">{TOP_LEFT}</text>
@@ -135,8 +142,8 @@ def footer(F):
     W, H = 1200, 400
     rng = random.Random(8)
     art = Art(W, H, "The end. See you next summer")
-    title, tl, tw = letters(F["black"], "THE END", 100, W / 2, 200, "hero float", spacing=4, step=0.12)
-    jp, _, _ = letters(F["jp"], FOOT_JP, 22, W / 2, 248, "jp float", spacing=6, step=0.1)
+    title, tl, tw = letters(F["black"], "THE END", 100, W / 2, 200, "hero", spacing=4, step=0)
+    jp, _, _ = letters(F["jp"], FOOT_JP, 22, W / 2, 248, "jp", spacing=6, step=0)
     seal_x = tl + tw + 58
     floor_y = 318
     puddles = []
@@ -152,8 +159,6 @@ def footer(F):
   .hero {{ font: 800 100px {SERIF_STACK}; fill: url(#sheenF); stroke: {PAPER}; stroke-width: 3px; paint-order: stroke; stroke-linejoin: round; }}
   .meta {{ font: 400 13px {SERIF_STACK}; fill: {INK}; letter-spacing: 5px; stroke: {PAPER}; stroke-width: 4px; paint-order: stroke; }}
   .jp {{ font: 800 22px {MINCHO_STACK}; fill: {INK}; stroke: {PAPER}; stroke-width: 4px; paint-order: stroke; }}
-  .seal {{ transform-box: fill-box; transform-origin: center; animation: seal 6.4s {EASE} infinite alternate; }}
-  @keyframes seal {{ from {{ transform: rotate(-9deg) scale(1); }} to {{ transform: rotate(-5deg) scale(1.05); }} }}
 """))
     art.defs.append(inside(W, H) + sheen_grad("sheenF", tl, tl + tw, 6.4, 3.2, 70)
                     + f'<radialGradient id="calm"><stop offset="0.35" stop-color="{PAPER}" stop-opacity="0.9" /><stop offset="1" stop-color="{PAPER}" stop-opacity="0" /></radialGradient>')
@@ -168,12 +173,7 @@ def footer(F):
   {"".join(puddles)}
   {splashes(rng, 26, 30, W - 30, floor_y + 12, H - 16)}
   <g transform="rotate(-11 250 220)">{umbrella}</g>
-  {jellyfish("f1", 1000, 118, 0.92, 0.4, 1.0, 5)}
-  {jellyfish("f2", 890, 66, 0.42, 1.9, 0.8, 6)}
-  {jellyfish("f3", 1110, 236, 0.34, 2.6, 0.6, 7)}
   {chime("F", 1150, 12, 1.05, "雨")}
-  {foam(rng, 22, 120, W - 120, floor_y + 6, H - 20, 2.2, 8, (90, 220))}
-  {petals(rng, 12, 60, W - 200, -10, 360)}
   {rain_field(random.Random(3), 12, 12, W - 24, H - 30, 64, 0, -0.16)}
   <ellipse cx="{W / 2}" cy="190" rx="360" ry="96" fill="url(#calm)" />
 </g>
@@ -181,151 +181,105 @@ def footer(F):
     art.ink(title_fx(title, 5.0, 1.25) + jp + frame(W, H))
 
     def seal(red):
-        return (f'<g class="seal"><circle cx="{seal_x:.0f}" cy="158" r="31" fill="{red}" /><circle cx="{seal_x:.0f}" cy="158" r="26" fill="none" stroke="#ffffff" stroke-width="1.2" />'
+        return (f'<g transform="rotate(-7 {seal_x:.0f} 158)"><circle cx="{seal_x:.0f}" cy="158" r="31" fill="{red}" /><circle cx="{seal_x:.0f}" cy="158" r="26" fill="none" stroke="#ffffff" stroke-width="1.2" />'
                 f'<text x="{seal_x:.0f}" y="169" text-anchor="middle" style="font: 800 30px {MINCHO_STACK}; fill: #ffffff">完</text></g>')
     art.color(seal(RED), seal(NIGHT_RED))
     art.write(OUT, "footer")
 
 
-# ---------------------------------------------------------------- 分区标题
-def title(i, name, english, japanese, F):
-    W, H = 900, 128
-    rng = random.Random(i * 13 + 1)
-    art = Art(W, H, english)
-    size = 40
-    tw = F["bold"].width(english, size, 0.5)
-    label = f"第{i}話"
-    sw = 54
-    total = sw + 16 + tw
-    x0 = W / 2 - total / 2
-    text, tl, _ = letters(F["bold"], english, size, x0 + sw + 16, 74, "t float", spacing=0.5, step=0.07, anchor="start")
-    jp, jl, jw = letters(F["jp"], japanese, 15, W / 2, 112, "j", spacing=8, step=0)
-    right = x0 + total
-    motif = [lambda: jellyfish(f"t{i}", right + 72, 42, 0.42, i * 0.7, 0.55, i),
-             lambda: chime(f"t{i}", right + 64, 6, 0.8),
-             lambda: foam(rng, 7, right + 30, right + 110, 70, 118, 2.5, 7, (40, 90))][i % 3]()
-    art.css.append(text_css([F["bold"], F["regular"], F["jp"]], f"""
-  .t {{ font: 700 {size}px {SERIF_STACK}; fill: url(#sheenT); stroke: {PAPER}; stroke-width: 2.5px; paint-order: stroke; stroke-linejoin: round; }}
-  .meta {{ font: 400 11.5px {SERIF_STACK}; fill: {GRAY}; letter-spacing: 4px; }}
-  .j {{ font: 800 15px {MINCHO_STACK}; fill: {INK}; }}
+# ---------------------------------------------------------------- 分区标题：目次风，静态
+def title(i, name, english, japanese):
+    W, H = 900, 116
+    bold = load_font(SERIF, 700, english + "0123456789")
+    jp = load_font(MINCHO, 800, f"第{i}話" + japanese)
+    art = Art(W, H, english, lean=True)
+    cx = W / 2
+    art.css.append(text_css([bold, jp], f"""
+  .num {{ font: 700 104px {SERIF_STACK}; fill: url(#toneBig); }}
+  .t {{ font: 700 36px {SERIF_STACK}; fill: {INK}; letter-spacing: 0.5px; stroke: {PAPER}; stroke-width: 8px; paint-order: stroke; stroke-linejoin: round; }}
+  .j {{ font: 800 12.5px {MINCHO_STACK}; fill: {GRAY}; letter-spacing: 7px; stroke: {PAPER}; stroke-width: 6px; paint-order: stroke; }}
 """))
-    art.defs.append(sheen_grad("sheenT", tl, tl + tw, 6.4, i * 1.28, 46))
-    art.ink(f'<text class="meta" x="{x0 + sw + 16:.1f}" y="30">EPISODE {i:02d} · {english.upper()}</text>'
-            f'<path d="M{jl - 26:.0f} 107H{jl - 150:.0f}" stroke="{INK}" stroke-width="1" /><path d="M{jl + jw + 26:.0f} 107H{jl + jw + 150:.0f}" stroke="{INK}" stroke-width="1" />'
-            f'<circle cx="{jl - 154:.0f}" cy="107" r="2" fill="{INK}" /><circle cx="{jl + jw + 154:.0f}" cy="107" r="2" fill="{INK}" />'
-            f'{motif}{foam(rng, 6, x0 - 110, x0 - 14, 64, 122, 2.2, 6.5, (40, 90))}'
-            f'{petals(rng, 4, 40, W - 40, -10, 150)}'
-            f'{sparkles([(x0 - 44, 34, 6, 0.3), (right + 18, 26, 5, 1.6), (x0 - 80, 70, 4, 2.4), (right + 130, 96, 4, 0.9)])}')
-    art.color(stamp(round(x0), 46, sw, 36, label, 17), stamp(round(x0), 46, sw, 36, label, 17).replace(RED, NIGHT_RED))
-    art.ink(title_fx(text, 3.0, 1.0) + jp)
+    # 背后一枚淡淡的网点话数，上面是短线夹着的红章、英文标题、日文副题
+    art.ink(f'<text class="num" x="{cx}" y="104" text-anchor="middle" opacity="0.5">{i:02d}</text>'
+            f'<path d="M{cx - 150:.0f} 25H{cx - 42:.0f}M{cx + 42:.0f} 25H{cx + 150:.0f}" stroke="{INK}" stroke-width="0.8" />'
+            f'<circle cx="{cx - 154:.0f}" cy="25" r="1.6" fill="{INK}" /><circle cx="{cx + 154:.0f}" cy="25" r="1.6" fill="{INK}" />'
+            f'<text class="t" x="{cx}" y="76" text-anchor="middle">{escape(english)}</text>'
+            f'<text class="j" x="{cx + 3.5}" y="104" text-anchor="middle">{japanese}</text>')
+    s, d = tag(round(cx - 28), 14, f"第{i}話", 12, 22)
+    s = s.replace(f'width="{int(12 * 1.15 * 3 + 18)}"', 'width="56"')
+    art.color(s, s.replace(RED, NIGHT_RED))
     art.write(OUT, f"title-{name}")
 
 
-# ---------------------------------------------------------------- 分隔线：星芒
-def glint(x, y, long, short, w, cls="", style=""):
-    """星芒：横长竖短的四道锥形光，加四道细斜光和一个亮核。光芒是渐尖的楔形，不是直线。"""
-    def ray(dx, dy, ln, wd):
-        nx, ny = -dy, dx
-        return (f"M{x + nx * wd:.2f} {y + ny * wd:.2f}L{x + dx * ln:.2f} {y + dy * ln:.2f}L{x - nx * wd:.2f} {y - ny * wd:.2f}"
-                f"L{x - dx * wd * 1.4:.2f} {y - dy * wd * 1.4:.2f}Z")
-    d = "".join(ray(dx, dy, ln, w) for dx, dy, ln in ((1, 0, long), (-1, 0, long), (0, 1, short), (0, -1, short)))
-    k = math.sqrt(0.5)
-    diag = "".join(ray(dx * k, dy * k, short * 0.45, w * 0.45) for dx, dy in ((1, 1), (1, -1), (-1, 1), (-1, -1)))
-    return (f'<g class="{cls}" style="transform-origin:{x}px {y}px;{style}"><path d="{d}" fill="{INK}" /><path d="{diag}" fill="{INK}" opacity="0.7" />'
-            f'<circle cx="{x}" cy="{y}" r="{w * 1.1:.2f}" fill="{PAPER}" stroke="{INK}" stroke-width="{w * 0.5:.2f}" /></g>')
-
-
+# ---------------------------------------------------------------- 分隔线：一枚菱形，静态
 def divider():
-    W, H, CY = 800, 56, 28
-    rng = random.Random(2)
-    art = Art(W, H, role="presentation")
+    W, H, CY = 800, 36, 18
+    art = Art(W, H, role="presentation", lean=True)
     art.defs.append(f'<linearGradient id="ruleL" x1="0" x2="1"><stop offset="0" stop-color="{INK}" stop-opacity="0" /><stop offset="1" stop-color="{INK}" /></linearGradient>'
-                    f'<linearGradient id="ruleR" x1="0" x2="1"><stop offset="0" stop-color="{INK}" /><stop offset="1" stop-color="{INK}" stop-opacity="0" /></linearGradient>'
-                    f'<radialGradient id="halo"><stop offset="0" stop-color="{INK}" stop-opacity="0.22" /><stop offset="1" stop-color="{INK}" stop-opacity="0" /></radialGradient>')
-    small = [(118, 0.55, 0.0), (214, 0.8, 1.1), (300, 0.5, 2.3), (500, 0.5, 0.6), (586, 0.8, 1.8), (682, 0.55, 2.9)]
-    twinkles = "".join(glint(x, CY, 16 * s, 9 * s, 1.3 * s, "tw", f"animation-delay:{-d:.2f}s") for x, s, d in small)
-    dust = "".join(f'<circle class="dust" cx="{rng.uniform(60, 740):.0f}" cy="{CY + rng.uniform(-14, 14):.0f}" r="{rng.uniform(0.5, 1.1):.2f}" fill="{INK}" '
-                   f'style="animation-delay:{-rng.uniform(0, 3.2):.2f}s" />' for _ in range(18))
-    runners = "".join(f'<g class="run" style="--to:{d * 300}px;animation-delay:{-k * 1.6:.1f}s">{glint(400 + d * 44, CY, 9, 5, 0.9)}</g>'
-                      for d in (-1, 1) for k in range(2))
-    art.css.append(f"""
-  .tw {{ animation: tw 3.2s {EASE} infinite; }}
-  @keyframes tw {{ 0%, 100% {{ transform: scale(0.35) rotate(0deg); opacity: 0.35; }} 50% {{ transform: scale(1) rotate(45deg); opacity: 1; }} }}
-  .main {{ animation: mainGlint 3.2s {EASE} infinite; }}
-  @keyframes mainGlint {{ 0%, 100% {{ transform: scale(0.88, 0.8); }} 50% {{ transform: scale(1.06, 1.12); }} }}
-  .mainx {{ animation: spin 19.2s linear infinite; }}
-  .dust {{ animation: dust 3.2s {EASE} infinite; }}
-  @keyframes dust {{ 0%, 100% {{ opacity: 0.1; }} 50% {{ opacity: 0.9; }} }}
-  .run {{ animation: run 3.2s {EASE} infinite; }}
-  @keyframes run {{ 0% {{ transform: translateX(0); opacity: 0; }} 15% {{ opacity: 1; }} 80% {{ opacity: 0.9; }} 100% {{ transform: translateX(var(--to)); opacity: 0; }} }}
-""")
-    art.ink(f'<rect x="20" y="{CY - 0.5}" width="350" height="1" fill="url(#ruleL)" /><rect x="430" y="{CY - 0.5}" width="350" height="1" fill="url(#ruleR)" />'
-            f'<rect x="60" y="{CY + 3.5}" width="300" height="0.5" fill="url(#ruleL)" opacity="0.55" /><rect x="440" y="{CY + 3.5}" width="300" height="0.5" fill="url(#ruleR)" opacity="0.55" />'
-            f'<circle cx="400" cy="{CY}" r="26" fill="url(#halo)" class="main" style="transform-origin:400px {CY}px" />'
-            f'{dust}{twinkles}{runners}'
-            f'<g class="mainx" style="transform-origin:400px {CY}px" opacity="0.45">{glint(400, CY, 14, 14, 0.8)}</g>'
-            f'{glint(400, CY, 62, 22, 2.2, "main")}')
-    art.color(f'<circle cx="400" cy="{CY}" r="1.3" fill="{RED}" />', f'<circle cx="400" cy="{CY}" r="1.3" fill="{NIGHT_RED}" />')
+                    f'<linearGradient id="ruleR" x1="0" x2="1"><stop offset="0" stop-color="{INK}" /><stop offset="1" stop-color="{INK}" stop-opacity="0" /></linearGradient>')
+    art.ink(f'<rect x="30" y="{CY - 0.5}" width="330" height="1" fill="url(#ruleL)" /><rect x="440" y="{CY - 0.5}" width="330" height="1" fill="url(#ruleR)" />'
+            f'<circle cx="381" cy="{CY}" r="1.3" fill="{INK}" /><circle cx="419" cy="{CY}" r="1.3" fill="{INK}" />'
+            f'<rect x="394.5" y="{CY - 5.5}" width="11" height="11" fill="{PAPER}" stroke="{INK}" stroke-width="1" transform="rotate(45 400 {CY})" />')
+    art.color(f'<circle cx="400" cy="{CY}" r="1.9" fill="{RED}" />', f'<circle cx="400" cy="{CY}" r="1.9" fill="{NIGHT_RED}" />')
     art.write(OUT, "divider")
 
 
-# ---------------------------------------------------------------- 播放卡两侧：频谱、声波、音符
-def wings():
-    W, H, CY = 260, 420, 210
-    for side in ("left", "right"):
-        rng = random.Random(17 if side == "left" else 23)
-        left = side == "left"
-        art = Art(W, H, role="presentation")
+# ---------------------------------------------------------------- 播放卡：封面、唱片、曲名，静态
+def spotify_mark(x, y, r=7.5):
+    return (f'<g transform="translate({x} {y})"><circle r="{r}" fill="{INK}" />'
+            f'<path d="M-4.6 -1.8Q0 -4.6 4.6 -1.8" fill="none" stroke="{PAPER}" stroke-width="1.6" stroke-linecap="round" />'
+            f'<path d="M-3.8 0.9Q0 -1.3 3.8 0.9" fill="none" stroke="{PAPER}" stroke-width="1.4" stroke-linecap="round" />'
+            f'<path d="M-3 3.4Q0 1.8 3 3.4" fill="none" stroke="{PAPER}" stroke-width="1.2" stroke-linecap="round" /></g>')
 
-        def X(v):
-            """v 是离播放卡的距离（0 = 紧挨着卡片）。"""
-            return W - v if left else v
-        # 对称频谱：竖条以中线为轴伸缩
-        bars = []
-        for k in range(24):
-            v = 6 + k * 10.4
-            env = math.exp(-k / 13) * (0.55 + 0.45 * math.sin(k * 0.9) ** 2)
-            hgt = 30 + 150 * env
-            dur = rng.uniform(0.8, 1.6)
-            bars.append(f'<rect class="eq" x="{X(v) - 1.7:.1f}" y="{CY - hgt / 2:.1f}" width="3.4" height="{hgt:.1f}" rx="1.7" fill="{INK}" opacity="{0.85 - k * 0.02:.2f}" '
-                        f'style="animation-duration:{dur:.2f}s;animation-delay:{-rng.uniform(0, dur):.2f}s" />')
 
-        # 声波丝带：从卡片向外衰减的波，形状在几组相位之间变形
-        def ribbon(phase, amp, freq, off, thick):
-            top, bot = [], []
-            for j in range(27):
-                v = j * 10
-                env = math.exp(-v / 170)
-                yy = CY + off + math.sin(v * freq + phase) * amp * env
-                t = thick * (0.4 + env)
-                top.append((X(v), yy - t))
-                bot.append((X(v), yy + t))
-            return smooth(top) + "L" + smooth(bot[::-1])[1:] + "Z"
+def vinyl(cx, cy, r):
+    grooves = "".join(f'<circle cx="{cx}" cy="{cy}" r="{rr}" />' for rr in range(int(r * 0.42), int(r) - 4, 5))
+    return (f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{INK}" />'
+            f'<g fill="none" stroke="{PAPER}" stroke-width="0.5" opacity="0.35">{grooves}</g>'
+            f'<path d="M{cx + r * 0.78 * math.cos(-2.1):.1f} {cy + r * 0.78 * math.sin(-2.1):.1f}A{r * 0.78:.1f} {r * 0.78:.1f} 0 0 1 {cx + r * 0.78 * math.cos(-1.1):.1f} {cy + r * 0.78 * math.sin(-1.1):.1f}" '
+            f'fill="none" stroke="{PAPER}" stroke-width="2.4" stroke-linecap="round" opacity="0.55" />'
+            f'<circle cx="{cx}" cy="{cy}" r="{r * 0.36:.1f}" fill="{PAPER}" /><circle cx="{cx}" cy="{cy}" r="{r * 0.36:.1f}" fill="url(#toneFine)" opacity="0.55" />'
+            f'<circle cx="{cx}" cy="{cy}" r="{r * 0.36:.1f}" fill="none" stroke="{INK}" stroke-width="1" />'
+            f'<circle cx="{cx}" cy="{cy}" r="{r * 0.22:.1f}" fill="none" stroke="{INK}" stroke-width="0.6" opacity="0.7" />'
+            f'<circle cx="{cx}" cy="{cy}" r="3" fill="{INK}" />')
 
-        def line(phase, amp, freq, off):
-            return smooth([(X(v), CY + off + math.sin(v * freq + phase) * amp * math.exp(-v / 190)) for v in range(0, 270, 10)])
-        waves = (f'<path d="{ribbon(0, 70, 0.045, 0, 5)}" fill="url(#toneFine)" stroke="{INK}" stroke-width="1">{morph([ribbon(p, 70, 0.045, 0, 5) for p in (0, 2.1, 4.2)], 4.8)}</path>'
-                 f'<path d="{line(1, 52, 0.06, -10)}" fill="none" stroke="{INK}" stroke-width="1.4">{morph([line(p, 52, 0.06, -10) for p in (1, 3.1, 5.2)], 3.2)}</path>'
-                 f'<path d="{line(2, 38, 0.08, 12)}" fill="none" stroke="{INK}" stroke-width="0.8" opacity="0.7">{morph([line(p, 38, 0.08, 12) for p in (2, 4.1, 0.2)], 2.4)}</path>')
-        rings = "".join(f'<circle class="soundring2" cx="{X(-24)}" cy="{CY}" r="40" fill="none" stroke="{INK}" stroke-width="{1.1 - 0.2 * i:.2f}" vector-effect="non-scaling-stroke" '
-                        f'style="animation-delay:{-3.2 * i / 4:.2f}s" />' for i in range(4))
-        notes = "".join(
-            f'<g transform="translate({X(14)} {CY + rng.uniform(-60, 60):.0f})"><g class="note" style="--dx:{(-1 if left else 1) * rng.uniform(150, 230):.0f}px;--dy:{-rng.uniform(60, 170):.0f}px;'
-            f'animation-duration:{(d := rng.uniform(4.8, 6.4)):.2f}s;animation-delay:{-d * k / 6:.2f}s">{music_note(k % 2, rng.uniform(0.75, 1.05))}</g></g>' for k in range(6))
-        art.css.append(f"""
-  .eq {{ transform-box: fill-box; transform-origin: center; animation: eq 1.2s {EASE} infinite alternate; }}
-  @keyframes eq {{ from {{ transform: scaleY(0.22); }} to {{ transform: scaleY(1); }} }}
-  .soundring2 {{ transform-box: fill-box; transform-origin: center; opacity: 0; animation: soundRing2 3.2s {EASE_OUT} infinite; }}
-  @keyframes soundRing2 {{ 0% {{ opacity: 0; transform: scale(0.4); }} 10% {{ opacity: 0.8; }} 100% {{ opacity: 0; transform: scale(6.6); }} }}
-""")
-        art.defs.append(f'<linearGradient id="fade" x1="{0 if left else 1}" x2="{1 if left else 0}"><stop offset="0" stop-color="#fff" stop-opacity="0" /><stop offset="0.4" stop-color="#fff" stop-opacity="0.85" /><stop offset="1" stop-color="#fff" /></linearGradient>'
-                        f'<mask id="side"><rect width="{W}" height="{H}" fill="url(#fade)" /></mask>')
-        art.ink(f'<g mask="url(#side)">{rings}{"".join(bars)}{waves}</g>{notes}'
-                f'{foam(rng, 26, 10, W - 10, 260, H, 2.4, 9, (150, 360))}'
-                f'{petals(rng, 7, 10, W - 10, -10, 440)}'
-                f'{jellyfish(f"w{side}", X(200), 84, 0.46, 0.9 if left else 2.0, 0.6, 9)}'
-                f'{sparkles([(X(120), 40, 6, 0.4), (X(60), 380, 5, 1.8), (X(230), 300, 5, 2.6)])}')
-        art.write(OUT, f"wing-{side}")
+
+def now_playing():
+    W, H = 900, 262
+    song, artist, artist_jp = TRACK
+    bold = load_font(SERIF, 700, song)
+    reg = load_font(SERIF, 400, artist + "NOW PLAYING ON SPOTIFY")
+    jp = load_font(MINCHO, 800, artist_jp + "再生中")
+    art = Art(W, H, f"Now playing on Spotify: {artist} - {song}", lean=True)
+    cover = base64.b64encode((OUT / "images" / "cover.jpg").read_bytes()).decode()
+    art.css.append(text_css([bold, reg, jp], f"""
+  .np-l {{ font: 400 11px {SERIF_STACK}; fill: {GRAY}; letter-spacing: 4px; }}
+  .np-t {{ font: 700 40px {SERIF_STACK}; fill: {INK}; }}
+  .np-a {{ font: 400 20px {SERIF_STACK}; fill: {INK}; opacity: 0.8; }}
+  .np-j {{ font: 800 14px {MINCHO_STACK}; fill: {GRAY}; letter-spacing: 3px; }}
+"""))
+    art.defs.append('<clipPath id="coverClip"><rect x="44" y="30" width="200" height="200" rx="4" /></clipPath>')
+    X = 420
+    # 静态的频谱：一串正弦叠出来的高低
+    bars = []
+    for k in range(46):
+        env = 0.55 + 0.45 * math.sin(k * 0.53 + 0.8) * math.sin(k * 0.21 + 2.1)
+        hgt = 4 + 30 * abs(env) * (0.75 + 0.25 * math.sin(k * 1.7))
+        bars.append(f'<rect x="{X + k * 6.5:.1f}" y="{200 - hgt:.1f}" width="3" height="{hgt:.1f}" rx="1.5" />')
+    played = X + (W - 44 - X) * 0.58
+    art.ink(card(W, H) + vinyl(280, 130, 96))
+    art.color(f'<image x="44" y="30" width="200" height="200" preserveAspectRatio="xMidYMid slice" clip-path="url(#coverClip)" href="data:image/jpeg;base64,{cover}" />')
+    art.ink(f'<rect x="44" y="30" width="200" height="200" rx="4" fill="none" stroke="{INK}" stroke-width="1.6" />'
+            f'{spotify_mark(X + 8, 61)}<text class="np-l" x="{X + 24}" y="65">NOW PLAYING ON SPOTIFY</text>'
+            f'<text class="np-t" x="{X}" y="118">{escape(song)}</text>'
+            f'<text class="np-a" x="{X}" y="150">{escape(artist)}</text>'
+            f'<text class="np-j" x="{X + (reg.width(artist, 20) if reg else 100) + 16:.1f}" y="150">{artist_jp}</text>'
+            f'<g fill="{INK}" opacity="0.85">{"".join(bars)}</g>'
+            f'<rect x="{X}" y="223.5" width="{W - 44 - X}" height="1" fill="{INK}" opacity="0.3" />'
+            f'<rect x="{X}" y="223" width="{played - X:.0f}" height="2" fill="{INK}" />')
+    art.color(f'<circle cx="{played:.0f}" cy="224" r="3.6" fill="{RED}" />', f'<circle cx="{played:.0f}" cy="224" r="3.6" fill="{NIGHT_RED}" />')
+    art.color(*tag(-(W - 26), 16, "再生中"))
+    art.write(OUT, "now-playing")
 
 
 # ---------------------------------------------------------------- 世界线：替代打字机的台词条
@@ -396,7 +350,7 @@ def quote(F):
     art.write(OUT, "quote")
 
 
-# ---------------------------------------------------------------- 第1話：自己紹介（me 站点的漫画页）
+# ---------------------------------------------------------------- 第1話：自己紹介（me 站点的漫画页，静态）
 HELLO = ["はじめまして、", "ユキです。"]
 NARRATION = ["これは、ある夏の日から", "始まった小さな物語。"]
 MONOLOGUE = ["你好，我是 Yuki。一个喜欢夏天、漫画和代码的人。白天写程序，晚上画画，偶尔在凌晨三点思考人生。",
@@ -441,10 +395,21 @@ def sfx(font, text, x, y, size, cls, depth=6, rot=-8):
     return f'<g transform="rotate({rot} {x} {y})">{shadow}{body}</g>'
 
 
+def still_hanabi(prefix, spots, rng, mode):
+    """画在天上的花火：用花火的形状，不带升空、闪光和消散的动画。"""
+    defs, body = [], []
+    for i, (x, y, r, kind) in enumerate(spots):
+        g, b = firework(f"{prefix}{i}", kind, x, y, r, SCHEMES[(i * 3 + len(prefix)) % len(SCHEMES)], 6, 0, rng, mode)
+        b = re.sub(r'<circle class="fw-(?:rise|flash)"[^>]*/>', "", b)
+        b = re.sub(r'<g class="fw" style="[^"]*">', "<g>", b).replace(' class="fw-glint"', "")
+        defs.append(g)
+        body.append(b)
+    return "".join(defs), "".join(body)
+
+
 def manga_page(F):
     W, H = 1200, 840
-    rng = random.Random(31)
-    art = Art(W, H, "第1話 自己紹介 — はじめまして、ユキです。")
+    art = Art(W, H, "第1話 自己紹介 — はじめまして、ユキです。", lean=True)
     chara = base64.b64encode((OUT / "images" / "chara.webp").read_bytes()).decode()
     avatar = base64.b64encode((OUT / "images" / "avatar.webp").read_bytes()).decode()
 
@@ -459,18 +424,15 @@ def manga_page(F):
     # A：天台的金网、夜空的花火、立绘、对话框、旁白、ザァ…
     fw_spots = [(566, 300, 72, "kiku"), (662, 138, 50, "botan"), (330, 66, 58, "kamuro"), (692, 336, 42, "wa"),
                 (404, 226, 38, "botan"), (642, 44, 36, "kiku"), (520, 410, 40, "jelly"), (726, 436, 32, "botan")]
-    fl_defs, fl_body = festival("pl", fw_spots, random.Random(5), "light", (4.8, 6.4))
-    fd_defs, fd_body = festival("pd", fw_spots, random.Random(5), "dark", (4.8, 6.4))
-    wind = "".join(f'<g transform="translate({rng.uniform(80, 900):.0f} {rng.uniform(40, 460):.0f})"><path class="wind" d="M0 0h{rng.uniform(40, 120):.0f}" stroke="{INK}" stroke-width="{rng.uniform(0.6, 1.2):.1f}" stroke-linecap="round" '
-                   f'style="animation-duration:{(d := rng.uniform(1.6, 2.4)):.2f}s;animation-delay:{-rng.uniform(0, d):.2f}s" /></g>' for _ in range(18))
+    fl_defs, fl_body = still_hanabi("pl", fw_spots, random.Random(5), "light")
+    fd_defs, fd_body = still_hanabi("pd", fw_spots, random.Random(5), "dark")
     bubble_d = "M432 60C470 30 560 34 590 92C620 150 606 250 548 282C500 308 446 290 430 246L392 262L418 226C390 170 396 92 432 60Z"
     hello = vtext(HELLO, 530, 102, 22, "hello", 1.5)
     narr = vtext(NARRATION, 754, 52, 17, "narr", 1.75)
     art.defs.append(f'<clipPath id="pA"><polygon points="{A}" /></clipPath><clipPath id="pB"><polygon points="{B}" /></clipPath>'
                     f'<clipPath id="pC"><polygon points="{C}" /></clipPath><clipPath id="pD"><polygon points="{D}" /></clipPath>'
                     f'<image id="chara" width="331" height="480" href="data:image/webp;base64,{chara}" />'
-                    f'<filter id="charaShadow" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0.08  0 0 0 0 0.09  0 0 0 0 0.11  0 0 0 0.18 0" /></filter>'
-                    f'<linearGradient id="portraitGlint" x1="0" y1="0" x2="1" y2="1"><stop offset="0.38" stop-color="#fff" stop-opacity="0" /><stop offset="0.5" stop-color="#fff" stop-opacity="0.22" /><stop offset="0.62" stop-color="#fff" stop-opacity="0" /></linearGradient>')
+                    f'<filter id="charaShadow" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0.08  0 0 0 0 0.09  0 0 0 0 0.11  0 0 0 0.18 0" /></filter>')
     art.css.append(text_css([F["jp"], F["regular"], F["sc"]], f"""
   .hello {{ font: 800 22px {MINCHO_STACK}; fill: {INK}; }}
   .narr {{ font: 800 17px {MINCHO_STACK}; fill: {INK}; }}
@@ -481,62 +443,39 @@ def manga_page(F):
   .mono {{ font: 500 16px 'Noto Serif SC', 'Songti SC', serif; fill: {INK}; }}
   .label {{ font: 400 11px {SERIF_STACK}; fill: {RED}; letter-spacing: 4px; }}
   .note {{ font: 800 20px {MINCHO_STACK}; fill: {RED}; stroke: {PAPER}; stroke-width: 4px; paint-order: stroke; }}
-  .wind {{ opacity: 0; animation: wind linear infinite; }}
-  @keyframes wind {{ 0% {{ opacity: 0; transform: translateX(120px); }} 15% {{ opacity: 0.5; }} 70% {{ opacity: 0.35; }} 100% {{ opacity: 0; transform: translateX(-260px); }} }}
-  .bob {{ animation: bob 4.8s {EASE} infinite; }}
-  @keyframes bob {{ 0%, 100% {{ transform: translateY(0) rotate(0deg); }} 50% {{ transform: translateY(-4px) rotate(-0.6deg); }} }}
-  .breath {{ transform-origin: 190px 476px; animation: breath 4.8s {EASE} infinite; }}
-  @keyframes breath {{ 0%, 100% {{ transform: scale(1, 1); }} 45% {{ transform: scale(1.004, 1.008); }} }}
-  .kenburns {{ transform-origin: 980px 360px; animation: kb 19.2s {EASE} infinite alternate; }}
-  @keyframes kb {{ from {{ transform: scale(1); }} to {{ transform: scale(1.05) translateY(-6px); }} }}
-  .glintB {{ animation: glintB 6.4s {EASE} infinite; }}
-  .kenburnsC {{ transform-origin: 178px 660px; animation: kb 19.2s {EASE} infinite alternate-reverse; }}
-  .glintC {{ animation: glintC 6.4s {EASE} infinite; animation-delay: -3.2s; }}
-  @keyframes glintC {{ 0% {{ transform: translateX(0); }} 40%, 100% {{ transform: translateX(760px); }} }}
-  @keyframes glintB {{ 0% {{ transform: translate(-500px, -500px); }} 40%, 100% {{ transform: translate(500px, 500px); }} }}
-  .buzz {{ transform-box: fill-box; transform-origin: center; animation: buzz 1.6s {EASE} infinite alternate; }}
-  @keyframes buzz {{ from {{ transform: scale(1) rotate(0deg); }} to {{ transform: scale(1.035) rotate(-0.8deg); }} }}
-  .sfxsway {{ transform-box: fill-box; transform-origin: center; animation: sfxsway 6.4s {EASE} infinite alternate; }}
-  @keyframes sfxsway {{ from {{ transform: translateX(0) scale(1); }} to {{ transform: translateX(-8px) scale(1.03); }} }}
-  .read {{ animation: read 12.8s {EASE} infinite; }}
+  .sfxN {{ fill: {NIGHT_INK_SFX}; stroke: #070b10; }}
+  .sfxN.sfxsh {{ fill: #070b10; }}
 """))
-    art.ink(f'<rect width="{W}" height="{H}" rx="8" fill="{PAPER}" /><rect width="{W}" height="{H}" rx="8" filter="url(#grain)" />'
+    art.ink(f'<rect width="{W}" height="{H}" rx="8" fill="{PAPER}" />'
             f'<g clip-path="url(#pA)"><rect x="16" y="16" width="{ax}" height="460" fill="{TONE_GRAY_SKY}" />'
             f'<rect x="16" y="16" width="{ax}" height="240" fill="url(#tone)" opacity="0.55" mask="url(#toneUp)" /></g>')
-    art.color(f'<g clip-path="url(#pA)">{fl_body}</g>{fl_defs}',
+    art.color(f'<defs>{fl_defs}</defs><g clip-path="url(#pA)"><g style="mix-blend-mode:multiply" opacity="0.8">{fl_body}</g></g>',
+              f'<defs>{fd_defs}<linearGradient id="nightSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a1119" /><stop offset="0.55" stop-color="#1d2a3d" /><stop offset="1" stop-color="#35324a" /></linearGradient></defs>'
               f'<g clip-path="url(#pA)"><rect x="16" y="16" width="{ax}" height="460" fill="url(#nightSky)" />'
-              f'<rect x="16" y="16" width="{ax}" height="260" fill="url(#tone)" opacity="0.25" mask="url(#toneUp)" />{fd_body}</g>{fd_defs}'
-              f'<defs><linearGradient id="nightSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a1119" /><stop offset="0.55" stop-color="#1d2a3d" /><stop offset="1" stop-color="#35324a" /></linearGradient></defs>')
-    art.ink(f'<g clip-path="url(#pA)">{fence("P", 16, ax + 4, 232, 480, [64, 330, 600], 22)}{wind}'
-            f'{petals(rng, 10, 260, 760, 0, 470)}</g>')
+              f'<rect x="16" y="16" width="{ax}" height="260" fill="url(#tone)" opacity="0.25" mask="url(#toneUp)" /><g opacity="0.9">{fd_body}</g></g>')
+    art.ink(f'<g clip-path="url(#pA)">{fence("P", 16, ax + 4, 232, 480, [64, 330, 600], 22)}</g>')
     art.color(f'<g clip-path="url(#pA)"><use href="#chara" xlink:href="#chara" x="38" y="38" filter="url(#charaShadow)" />'
-              f'<g class="breath"><use href="#chara" xlink:href="#chara" x="30" y="30" /></g></g>')
+              f'<use href="#chara" xlink:href="#chara" x="30" y="30" /></g>')
     art.ink(f'<g clip-path="url(#pA)">'
-            f'<g class="bob"><path d="{bubble_d}" fill="{PAPER}" stroke="{INK}" stroke-width="2.4" stroke-linejoin="round" />{hello}</g>'
-            f'<rect x="704" y="36" width="70" height="{len(NARRATION[0]) * 17 * 1.08 + 26:.0f}" fill="{PAPER}" stroke="{INK}" stroke-width="2" />{narr}'
-            f'{foam(rng, 12, 380, 760, 420, 480, 2.4, 7, (120, 260))}</g>')
+            f'<path d="{bubble_d}" fill="{PAPER}" stroke="{INK}" stroke-width="2.4" stroke-linejoin="round" />{hello}'
+            f'<rect x="704" y="36" width="70" height="{len(NARRATION[0]) * 17 * 1.08 + 26:.0f}" fill="{PAPER}" stroke="{INK}" stroke-width="2" />{narr}</g>')
     sfx_a = sfx(F["jp"], "ザァ…", 452, 452, 96, "sfxA", 7, -8)
-    art.color(f'<g clip-path="url(#pA)"><g class="sfxsway">{sfx_a}</g></g>',
-              f'<g clip-path="url(#pA)"><g class="sfxsway">{sfx_a.replace("sfxA", "sfxA sfxN")}</g></g>')
+    art.color(f'<g clip-path="url(#pA)">{sfx_a}</g>', f'<g clip-path="url(#pA)">{sfx_a.replace("sfxA", "sfxA sfxN")}</g>')
 
     # B：本人
     art.ink(f'<g clip-path="url(#pB)"><rect x="760" y="16" width="430" height="{H}" fill="url(#tone)" /></g>')
-    art.color(f'<g clip-path="url(#pB)"><g class="kenburns"><image x="{bx(H - 16):.0f}" y="16" width="{1184 - bx(H - 16):.0f}" height="{H - 32}" preserveAspectRatio="xMidYMid slice" '
-              f'href="data:image/webp;base64,{avatar}" /></g><g class="glintB"><rect x="700" y="0" width="560" height="{H}" fill="url(#portraitGlint)" /></g></g>')
+    art.color(f'<g clip-path="url(#pB)"><image x="{bx(H - 16):.0f}" y="16" width="{1184 - bx(H - 16):.0f}" height="{H - 32}" preserveAspectRatio="xMidYMid slice" '
+              f'href="data:image/webp;base64,{avatar}" /></g>')
     note_arrow = f'<path d="M1012 566H1052M1012 566l10 -6M1012 566l10 6" fill="none" stroke="{RED}" stroke-width="2.2" stroke-linecap="round" />'
-    art.ink(f'<g clip-path="url(#pB)">{foam(rng, 16, 800, 1180, 700, 830, 3, 10, (200, 520))}{petals(rng, 6, 800, 1180, 0, 860)}'
-            f'{sparkles([(1150, 60, 9, 0.2), (830, 420, 6, 1.4), (1160, 700, 7, 2.5)])}</g>'
-            f'<text class="note" x="1060" y="573">本人</text>')
-    art.color(f'<g class="bob">{note_arrow}</g>', f'<g class="bob">{note_arrow.replace(RED, NIGHT_RED)}</g>')
+    art.ink(f'<text class="note" x="1060" y="573">本人</text>')
+    art.color(note_arrow, note_arrow.replace(RED, NIGHT_RED))
 
     # C：头像（me 站点的 icon），夏天的天空；小字的蝉鸣贴在右上角
     icon = base64.b64encode((OUT / "images" / "icon.webp").read_bytes()).decode()
-    art.color(f'<g clip-path="url(#pC)"><g class="kenburnsC"><image x="16" y="488" width="324" height="{H - 504}" preserveAspectRatio="xMidYMid slice" '
-              f'href="data:image/webp;base64,{icon}" /></g><g class="glintC"><rect x="-300" y="488" width="260" height="{H - 504}" fill="url(#portraitGlint)" /></g></g>')
-    art.ink(f'<g clip-path="url(#pC)">{foam(rng, 12, 30, 330, 760, 830, 2.4, 7, (120, 300))}{petals(rng, 4, 30, 320, 480, 360)}'
-            f'{sparkles([(300, 520, 7, 0.4), (40, 800, 6, 1.8)])}</g>')
+    art.color(f'<g clip-path="url(#pC)"><image x="16" y="488" width="324" height="{H - 504}" preserveAspectRatio="xMidYMid slice" '
+              f'href="data:image/webp;base64,{icon}" /></g>')
     sfx_c = sfx(F["jp"], "ミーン", 226, 532, 30, "sfxC", 3, -6) + sfx(F["jp"], "ミンミン", 212, 568, 30, "sfxC", 3, -6)
-    art.color(f'<g clip-path="url(#pC)"><g class="buzz">{sfx_c}</g></g>', f'<g clip-path="url(#pC)"><g class="buzz">{sfx_c.replace("sfxC", "sfxC sfxN")}</g></g>')
+    art.color(f'<g clip-path="url(#pC)">{sfx_c}</g>', f'<g clip-path="url(#pC)">{sfx_c.replace("sfxC", "sfxC sfxN")}</g>')
 
     # D：MONOLOGUE
     y = 556
@@ -547,25 +486,14 @@ def manga_page(F):
             y += 29
         y += 10
     lines_y = [float(t.split('y="')[1].split('"')[0]) for t in paras]
-    frames = []
-    n = len(lines_y)
-    for k, ly in enumerate(lines_y):
-        frames.append(f"{100 * k / n:.2f}% {{ transform: translateY({ly - lines_y[0]:.0f}px); }} {100 * (k + 0.75) / n:.2f}% {{ transform: translateY({ly - lines_y[0]:.0f}px); }}")
-    art.css.append(f"@keyframes read {{ {' '.join(frames)} 100% {{ transform: translateY(0px); }} }}")
     art.ink(f'<g clip-path="url(#pD)"><rect x="352" y="488" width="420" height="{H - 504}" fill="{PAPER}" />'
-            f'<path d="M370 {lines_y[0] - 16}V{lines_y[-1] + 6}" stroke="{INK}" stroke-width="0.6" opacity="0.4" />{"".join(paras)}'
-            f'{foam(rng, 8, 640, 750, 790, 830, 2.2, 5.5, (60, 140))}</g>'
+            f'<path d="M370 {lines_y[0] - 16}V{lines_y[-1] + 6}" stroke="{INK}" stroke-width="0.6" opacity="0.4" />{"".join(paras)}</g>'
             f'<text class="label" x="384" y="522">MONOLOGUE</text>')
-    marker = f'<g class="read"><rect x="368" y="{lines_y[0] - 15:.0f}" width="4" height="19" rx="2" fill="{RED}" /></g>'
+    marker = f'<rect x="368" y="{lines_y[0] - 15:.0f}" width="4" height="19" rx="2" fill="{RED}" />'
     art.color(marker, marker.replace(RED, NIGHT_RED))
 
     # 分格的框线
     art.ink("".join(f'<polygon points="{pts}" fill="none" stroke="{INK}" stroke-width="3" stroke-linejoin="round" />' for pts in (A, B, C, D)))
-    art.css.append(f"""
-  .sfxN {{ fill: {NIGHT_INK_SFX}; stroke: #070b10; }}
-  .sfxN.sfxsh {{ fill: #070b10; }}
-  .spinslow {{ animation: spin 96s linear infinite; }}
-""")
     art.write(OUT, "manga")
 
 
@@ -586,9 +514,9 @@ if __name__ == "__main__":
         sys.exit("需要联网取字体")
     only = set(sys.argv[1:])
     for name, fn in [("header", lambda: header(F)), ("footer", lambda: footer(F)), ("manga", lambda: manga_page(F)), ("divider", divider),
-                     ("wings", wings), ("quote", lambda: quote(F))]:
+                     ("playing", now_playing), ("quote", lambda: quote(F))]:
         if not only or name in only:
             fn()
     if not only or "titles" in only:
         for i, (name, en, jp) in enumerate(EPISODES, 1):
-            title(i, name, en, jp, F)
+            title(i, name, en, jp)
