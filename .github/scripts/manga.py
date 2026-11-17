@@ -1001,20 +1001,26 @@ def cloud(uid, x, y, w, h, seed, shade_left=True):
     sw = 1.7
     union = "".join(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r:.1f}" />' for cx, cy, r in circ)
     outline = "".join(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{r + sw:.1f}" />' for cx, cy, r in circ)
+    # 裁剪用的轮廓写成一条路径（同向的圆叠在一起，nonzero 填充就是并集）：单个形状的裁剪浏览器能直接按路径裁，不用另开蒙版图层
+    clip = "".join(f"M{cx - r:.1f} {cy:.1f}a{r:.1f} {r:.1f} 0 1 0 {2 * r:.1f} 0a{r:.1f} {r:.1f} 0 1 0 {-2 * r:.1f} 0z" for cx, cy, r in circ)
+    clip += f"M{x - w / 2 - 40:.0f} {y - 10:.0f}v400h{w + 80:.0f}v-400z"
     arcs = []
     for cx, cy, r in circ:
         if rng.random() < 0.55:
             a0, a1 = math.radians(rng.uniform(195, 230)), math.radians(rng.uniform(300, 340))
             arcs.append(f"M{cx + math.cos(a0) * r:.1f} {cy + math.sin(a0) * r:.1f}A{r:.1f} {r:.1f} 0 0 1 {cx + math.cos(a1) * r:.1f} {cy + math.sin(a1) * r:.1f}")
     sx = x - w / 2 if shade_left else x
+    fy, fh = y - h * 0.35, h * 0.5 + 400
     return f"""<g class="cloud" style="transform-origin:{x:.0f}px {y:.0f}px;{f'animation-delay:{-seed * 2.3:.1f}s'}">
-  <clipPath id="cl{uid}">{union}<rect x="{x - w / 2 - 40:.0f}" y="{y - 10:.0f}" width="{w + 80:.0f}" height="400" /></clipPath>
+  <clipPath id="cl{uid}"><path d="{clip}" /></clipPath>
+  <linearGradient id="cf{uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{PAPER}" /><stop offset="1" stop-color="{PAPER}" stop-opacity="0" /></linearGradient>
   <g fill="{INK}">{outline}</g>
   <rect x="{x - w / 2 - 40 - sw:.0f}" y="{y - 10 - sw:.0f}" width="{w + 80 + 2 * sw:.0f}" height="400" fill="{INK}" />
   <g fill="{PAPER}">{union}<rect x="{x - w / 2 - 40:.0f}" y="{y - 10:.0f}" width="{w + 80:.0f}" height="400" /></g>
   <g clip-path="url(#cl{uid})">
-    <rect x="{sx - 40:.0f}" y="{top:.0f}" width="{w / 2 + 80:.0f}" height="{y - top + 400:.0f}" fill="url(#tone)" opacity="0.5" />
-    <rect x="{x - w / 2 - 40:.0f}" y="{y - h * 0.35:.0f}" width="{w + 80:.0f}" height="{h * 0.5 + 400:.0f}" fill="url(#toneFine)" opacity="0.55" mask="url(#toneDown)" />
+    <rect x="{x - w / 2 - 40:.0f}" y="{fy:.0f}" width="{w + 80:.0f}" height="{fh:.0f}" fill="url(#toneFine)" fill-opacity="0.55" />
+    <rect x="{x - w / 2 - 40:.0f}" y="{fy - 1:.0f}" width="{w + 80:.0f}" height="{fh + 1:.0f}" fill="url(#cf{uid})" />
+    <rect x="{sx - 40:.0f}" y="{top:.0f}" width="{w / 2 + 80:.0f}" height="{y - top + 400:.0f}" fill="url(#tone)" fill-opacity="0.5" />
     <path d="{"".join(arcs)}" fill="none" stroke="{INK}" stroke-width="0.9" stroke-linecap="round" />
   </g>
 </g>"""
@@ -1062,11 +1068,26 @@ def wire_point(x0, y0, x1, y1, sag, t):
 
 
 def fence(uid, x0, x1, y0, y1, posts, mesh=17):
-    """天台的金网：斜格铁丝网（上淡下浓）、顶部扶手、立柱。"""
-    return f"""<pattern id="chain{uid}" width="{mesh}" height="{mesh}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0H{mesh}M0 0V{mesh}" stroke="{INK}" stroke-width="1.15" fill="none" /></pattern>
-<linearGradient id="ffade{uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.35" /><stop offset="0.5" stop-color="#fff" stop-opacity="0.85" /><stop offset="1" stop-color="#fff" /></linearGradient>
-<mask id="fmask{uid}"><rect x="{x0}" y="{y0}" width="{x1 - x0}" height="{y1 - y0}" fill="url(#ffade{uid})" /></mask>
-<g mask="url(#fmask{uid})"><rect x="{x0}" y="{y0 + 6}" width="{x1 - x0}" height="{y1 - y0 - 6}" fill="url(#chain{uid})" /></g>
+    """天台的金网：斜格铁丝网（上淡下浓）、顶部扶手、立柱。
+    铁丝是一条路径（两组 45° 斜线，按矩形裁好），描边用自上而下由淡到浓的渐变——不用图案，也不用蒙版，重画一次很便宜。
+    线宽 0.6：原来用图案画的时候线压在图案块的边上，1.15 的线只露出一半。"""
+    top, k = y0 + 6, mesh * math.sqrt(2)
+    seg = []
+    # x + y = c 的一组（左下 ↗ 右上）和 y - x = c 的一组（左上 ↘ 右下），相位和原来以原点为基准的图案一致
+    c = math.ceil((x0 + top) / k) * k
+    while c <= x1 + y1:
+        xa, xb = max(x0, c - y1), min(x1, c - top)
+        if xb - xa > 0.5:
+            seg.append(f"M{xa:.1f} {c - xa:.1f}L{xb:.1f} {c - xb:.1f}")
+        c += k
+    c = math.ceil((top - x1) / k) * k
+    while c <= y1 - x0:
+        xa, xb = max(x0, top - c), min(x1, y1 - c)
+        if xb - xa > 0.5:
+            seg.append(f"M{xa:.1f} {xa + c:.1f}L{xb:.1f} {xb + c:.1f}")
+        c += k
+    return f"""<linearGradient id="ffade{uid}" gradientUnits="userSpaceOnUse" x1="0" y1="{y0}" x2="0" y2="{y1}"><stop offset="0" stop-color="{INK}" stop-opacity="0.35" /><stop offset="0.5" stop-color="{INK}" stop-opacity="0.85" /><stop offset="1" stop-color="{INK}" /></linearGradient>
+<path d="{"".join(seg)}" fill="none" stroke="url(#ffade{uid})" stroke-width="0.6" />
 <rect x="{x0}" y="{y0}" width="{x1 - x0}" height="6" fill="{INK}" /><rect x="{x0}" y="{y0 + 8}" width="{x1 - x0}" height="1" fill="{INK}" opacity="0.6" />
 {"".join(f'<rect x="{px - 5}" y="{y0 - 6}" width="10" height="{y1 - y0 + 6}" fill="{INK}" /><rect x="{px - 7}" y="{y0 - 9}" width="14" height="5" rx="1" fill="{INK}" />' for px in posts)}"""
 
@@ -1099,6 +1120,218 @@ SCENE_CSS = f"""
   .burst {{ animation: burst 3.2s {EASE} infinite alternate; }}
   @keyframes burst {{ from {{ transform: rotate(-4deg) scale(0.97); }} to {{ transform: rotate(3deg) scale(1.04); }} }}
 """
+
+# ================================================================ 第三版：逐格动画
+# 量过的结论：SVG 当图片用时，浏览器每重画一次都要把整张图重新栅格化，另外还有一笔固定开销；
+# 连续动画（CSS 线性插值、SMIL animate）每秒重画 60 次，哪怕只动了一个像素。
+# 所以新的动效全部“逐格”：
+#   · <set> 翻页：若干格画面叠在一起，按主时钟轮流显示。两次换格之间浏览器完全不计时、不重画，
+#     一秒换一次的动画几乎不花钱；一秒十二格的也比连续动画省四五倍。
+#   · CSS steps()：真正连续的运动（贪吃蛇）按固定格数走，重画次数由格数决定而不是屏幕刷新率。
+TICK = 0.08  # 一格 = 0.08 秒（12.5 格/秒，动画里的“一拍二”）
+
+
+def clock(uid, period):
+    """主时钟：一个看不见的 <set> 走完就重启；别的 <set> 都写成 `uid.begin+偏移`，于是整组循环。"""
+    return f'<g visibility="hidden"><set id="{uid}" attributeName="visibility" to="hidden" begin="0s;{uid}.end" dur="{period:.2f}s" /></g>'
+
+
+def cel(uid, spans, svg):
+    """一格画面：平时隐藏，在主时钟的 spans = [(开始秒, 持续秒), …] 里显示。"""
+    by_dur = {}
+    for at, dur in spans:
+        by_dur.setdefault(round(dur, 2), []).append(at)
+    sets = "".join(f'<set attributeName="visibility" to="visible" begin="{";".join(f"{uid}.begin+{at:.2f}s" for at in ats)}" dur="{dur:.2f}s" />'
+                   for dur, ats in by_dur.items())
+    return f'<g visibility="hidden">{svg}{sets}</g>'
+
+
+def poster(svg):
+    """定格：动画一开始就藏起来，只有不跑动画的环境（静态渲染）才看得到，保证那里不是一片空白。"""
+    return f'<g>{svg}<set attributeName="visibility" to="hidden" begin="0s" fill="freeze" /></g>'
+
+
+def flipbook(uid, frames, period=None):
+    """frames = [(开始秒, 持续秒, svg)] → 主时钟 + 各格。period 省略时取最后一格结束的时刻。"""
+    period = period or max(at + dur for at, dur, _ in frames)
+    return clock(uid, period) + "".join(cel(uid, [(at, dur)], svg) for at, dur, svg in frames)
+
+
+# ---------------------------------------------------------------- 花火（逐格版）
+# 每一格是事先算好的星点：按“空气阻力”减速飞出去，尾巴是这一格和前一小段时间之间的连线（越慢越短），
+# 整朵花随重力慢慢下坠；同色的星合并成一条路径。菊和牡丹只算五分之一圈的星，其余四份用 <use> 转出来，
+# 垂柳只算右半边、左半边镜像——文件里只存一小部分坐标。整场只靠 <set> 换格，没有任何逐帧动画。
+HN_KINDS = {  # 每一份的星数、芯的星数、寿命（格）、阻力、重力、尾巴（寿命比例）、几重对称、要不要升空的火箭
+    "kiku": (22, 5, 24, 3.4, 0.10, 0.12, 5, True),
+    "botan": (13, 4, 21, 3.6, 0.09, 0.0, 5, False),
+    "kamuro": (36, 0, 34, 2.5, 0.72, 0.27, 2, True),
+    "wa": (40, 0, 21, 3.4, 0.08, 0.0, 1, False),
+}
+HN_RISE = 6  # 升空用几格
+# 一发里哪几格要换画面：刚炸开时每格都换，之后隔两三格（越到后面动得越慢，没必要画那么勤）
+HN_AGES = [0, 1, 2, 3, 4, 6, 8, 10, 13, 16, 19, 22, 26, 30, 34]
+
+
+def _hn_grow(tau, k):
+    return (1 - math.exp(-k * max(0.0, tau))) / (1 - math.exp(-k))
+
+
+def _hn_frame(fw, age, mode, fid):
+    """一发花火在 age（从点火算起的格数）时的画面。fw 是 hanabi_show 里准备好的字典，fid 是这一格里给 <use> 引用的 id。"""
+    x, y, R, kind, hw = fw["x"], fw["y"], fw["R"], fw["kind"], fw["hw"]
+    _, _, life, k, g, tail, sym, rocket = HN_KINDS[kind]
+    c1, c2, c3 = fw["cols"]
+    rise = HN_RISE if rocket else 0
+    stroke = 'stroke-linecap="round" stroke-linejoin="round" fill="none"'
+    if age < rise:  # 升空：一条越来越短的光尾
+        u = age / rise
+        yy = y + fw["rise"] * (1 - u) ** 2.2
+        ln = 46 * (1 - u) + 12
+        wob = math.sin(age * 1.7 + fw["seed"]) * 2.4
+        return (f'<path d="M{x + wob:.0f} {yy:.0f}l{-wob * 0.6:.1f} {ln:.0f}" stroke="{c3}" stroke-width="{hw * 0.5:.1f}" stroke-opacity="0.7" {stroke} />'
+                f'<circle cx="{x + wob:.0f}" cy="{yy:.0f}" r="{hw * 0.62:.1f}" fill="{c3}" />')
+    b = age - rise
+    if b > life:
+        return ""
+    tau = b / life
+    grow = _hn_grow(tau, k)
+    fade = 1.0 if tau < 0.6 else max(0.0, 1 - (tau - 0.6) / 0.4)
+    col = c1 if tau < 0.5 else c2
+    drop = g * R * tau * tau
+    # 光晕：一团跟着花一起涨大、慢慢暗下去的光，把夜空照亮一块（浅色版里是一抹淡淡的颜色）
+    once = f'<circle r="{R * (0.42 + 0.72 * grow):.0f}" fill="url(#{fw["glow"]})" fill-opacity="{(0.9 if mode == "dark" else 0.5) * (1 - tau) ** 1.2:.2f}" />'
+    if b <= 1:  # 炸开的一瞬
+        once += f'<circle r="{R * (0.2 if b == 0 else 0.34):.0f}" fill="url(#hnFlash)" fill-opacity="{0.95 if b == 0 else 0.5}" />'
+    tails, hot, heads, sparks = [], [], [], []
+    for dx, dy, die, tw in fw["stars"]:
+        if tau > die:
+            continue
+        if kind == "kamuro":  # 垂柳的星各自带着重力下坠，尾巴中间多一个点，带出弧度
+            def at(t):
+                gr = _hn_grow(t, k)
+                return dx * R * gr, dy * R * gr + g * R * max(0.0, t) ** 2
+            (px, py), (mx, my), (qx, qy) = at(tau), at(tau - tail / 2), at(tau - tail)
+            tails.append(f"M{qx:.0f} {qy:.0f}l{mx - qx:.0f} {my - qy:.0f}l{px - mx:.0f} {py - my:.0f}")
+            hot.append(f"M{mx:.0f} {my:.0f}l{px - mx:.0f} {py - my:.0f}")
+        else:
+            px, py = dx * R * grow, dy * R * grow
+            if tail:
+                q, h = _hn_grow(tau - tail, k) / max(grow, 1e-6), _hn_grow(tau - tail * 0.4, k) / max(grow, 1e-6)
+                tails.append(f"M{px * q:.0f} {py * q:.0f}l{px * (1 - q):.0f} {py * (1 - q):.0f}")
+                hot.append(f"M{px * h:.0f} {py * h:.0f}l{px * (1 - h):.0f} {py * (1 - h):.0f}")
+        # 末段噼啪：每颗星按自己的节奏忽明忽暗
+        (sparks if tau > 0.55 and (b + tw) % 3 == 0 else heads).append(f"M{px:.0f} {py:.0f}h.1")
+    wedge = []
+    if tails:
+        wedge.append(f'<path d="{"".join(tails)}" stroke="{col}" stroke-width="{hw * 0.34:.1f}" stroke-opacity="{0.62 * fade:.2f}" {stroke} />')
+        wedge.append(f'<path d="{"".join(hot)}" stroke="{col}" stroke-width="{hw * 0.62:.1f}" stroke-opacity="{0.9 * fade:.2f}" {stroke} />')
+    if heads:
+        wedge.append(f'<path d="{"".join(heads)}" stroke="{c3 if tau < 0.2 else col}" stroke-width="{hw * (1 if tau < 0.7 else 0.82):.1f}" stroke-opacity="{max(fade, 0.3):.2f}" {stroke} />')
+    if sparks:
+        wedge.append(f'<path d="{"".join(sparks)}" stroke="{c3}" stroke-width="{hw * 0.5:.1f}" stroke-opacity="{max(fade, 0.35):.2f}" {stroke} />')
+    if fw["core"] and tau < 0.8:  # 芯：小一圈、另一种颜色，先开先谢
+        tc = tau / 0.8
+        gc = _hn_grow(tc, 3.0)
+        wedge.append(f'<path d="{"".join(f"M{cx * R * 0.38 * gc:.0f} {cy * R * 0.38 * gc:.0f}h.1" for cx, cy in fw["core"])}" stroke="{c3}" '
+                     f'stroke-width="{hw * 0.8:.1f}" stroke-opacity="{1 - tc * 0.75:.2f}" {stroke} />')
+    wedge = "".join(wedge)
+    if sym == 5:
+        copies = f'<g id="{fid}">{wedge}</g>' + "".join(f'<use href="#{fid}" transform="rotate({72 * i})" />' for i in range(1, 5))
+    elif sym == 2:
+        copies = f'<g id="{fid}">{wedge}</g><use href="#{fid}" transform="scale(-1 1)" />'
+    else:
+        copies = wedge
+    return f'<g transform="translate({x} {y + (0 if kind == "kamuro" else drop):.0f})">{once}{copies}</g>'
+
+
+def hanabi_show(uid, shots, rng, mode, period):
+    """一场花火。shots = [(点火时刻（格）, x, y, R, kind, (主色, 变色, 芯色))]，颜色是 FW_DAY / FW_NIGHT 里的名字；period 是整场循环的格数。
+    返回 (defs, svg, 格数)：svg 里是主时钟、每一格的画面，以及不跑动画时显示的定格。"""
+    pal = FW_DAY if mode == "light" else FW_NIGHT
+    fws, glows = [], {}
+    for j, (t0, x, y, R, kind, names) in enumerate(shots):
+        n, n_core, life, k, g, tail, sym, rocket = HN_KINDS[kind]
+        cols = [pal[c] for c in names]
+        glows.setdefault(cols[0], f"hnG{len(glows)}")
+        n = round(n * (1.4 if R >= 200 else 1.0)) if R >= 120 else max(8, round(n * (0.62 if R < 70 else 0.8)))
+        span = 2 * math.pi / (sym if sym == 5 else 1)
+
+        def mag():  # 球面上均匀分布的方向投影到画面上：离中心的距离集中在外缘
+            return math.sqrt(1 - rng.uniform(0.0, 0.94) ** 2) * rng.uniform(0.95, 1.04)
+        if kind == "wa":  # 一个倾斜的环
+            tilt, rot = rng.uniform(0.3, 0.5), rng.uniform(0, math.pi)
+            dirs = []
+            for i in range(n):
+                a = 2 * math.pi * i / n
+                px, py = math.cos(a), math.sin(a) * tilt
+                dirs.append((px * math.cos(rot) - py * math.sin(rot), px * math.sin(rot) + py * math.cos(rot)))
+        elif kind == "kamuro":  # 右半边
+            dirs = []
+            for i in range(n):
+                a, m = -math.pi / 2 + math.pi * (i + rng.uniform(0.1, 0.9)) / n, mag()
+                dirs.append((math.cos(a) * m, math.sin(a) * m))
+        else:
+            dirs = []
+            for i in range(n):
+                a, m = span * (i + rng.uniform(0.12, 0.88)) / n, mag()
+                dirs.append((math.cos(a) * m, math.sin(a) * m))
+        stars = [(dx, dy, rng.uniform(0.72, 1.0), rng.randint(0, 2)) for dx, dy in dirs]
+        core = []
+        for i in range(n_core):
+            a, m = span * (i + rng.uniform(0.1, 0.9)) / n_core, mag()
+            core.append((math.cos(a) * m, math.sin(a) * m))
+        fws.append({"t0": t0, "x": x, "y": y, "R": R, "kind": kind, "cols": cols, "stars": stars, "core": core,
+                    "rise": min(230, R * 1.5 + 60), "seed": j * 1.3, "life": life, "lead": HN_RISE if rocket else 0, "glow": glows[cols[0]],
+                    "hw": max(3.4, min(6.4, R / 34 + 1.7)) * (1.3 if kind in ("botan", "wa") else 1)})
+
+    def ages(fw):  # 这一发自己要换画面的时刻（从点火算起）
+        return list(range(0, fw["lead"], 2)) + [fw["lead"] + a for a in HN_AGES if a <= fw["life"]]
+    marks = set()
+    for fw in fws:
+        marks.update((fw["t0"] + a) % period for a in ages(fw) + [fw["lead"] + fw["life"] + 1])
+    marks = sorted(marks)
+    cels = []
+    for i, t in enumerate(marks):
+        nxt = marks[i + 1] if i + 1 < len(marks) else period + marks[0]
+        body = []
+        for j, fw in enumerate(fws):
+            age = (t - fw["t0"]) % period
+            if age <= fw["lead"] + fw["life"]:  # 别的花火换格时它保持自己上一格的样子
+                body.append(_hn_frame(fw, [a for a in ages(fw) if a <= age][-1], mode, f"{uid}{i}x{j}"))
+        body = "".join(body)
+        if body:
+            d = nxt - t
+            spans = [(t * TICK, d * TICK)] if t + d <= period else [(t * TICK, (period - t) * TICK), (0, (t + d - period) * TICK)]
+            cels.append(cel(uid, spans, body))
+    defs = (f'<radialGradient id="hnFlash"><stop offset="0" stop-color="#ffffff" /><stop offset="0.4" stop-color="{pal["gold"]}" stop-opacity="0.45" />'
+            f'<stop offset="1" stop-color="{pal["gold"]}" stop-opacity="0" /></radialGradient>'
+            + "".join(f'<radialGradient id="{gid}"><stop offset="0" stop-color="{c}" stop-opacity="0.7" /><stop offset="0.45" stop-color="{c}" stop-opacity="0.3" />'
+                      f'<stop offset="1" stop-color="{c}" stop-opacity="0" /></radialGradient>' for c, gid in glows.items()))
+    still = "".join(_hn_frame(fw, fw["lead"] + int(fw["life"] * 0.42), mode, f"{uid}p{j}") for j, fw in enumerate(fws) if j % 2 == 0)
+    return defs, clock(uid, period * TICK) + poster(still) + "".join(cels), len(cels)
+
+
+# ---------------------------------------------------------------- 小风铃（分隔线用）
+def furin(x, y, s=1.0, tilt=0.0, paper=0.0, red=RED):
+    """挂在电线上的小风铃：玻璃铃、金鱼纹、舌、红短册。tilt 是整只的摆角，paper 是短册相对铃身再多摆的角度。
+    返回 (墨层, 彩色层)：短册是红的，放彩色层里，深色版不反相。"""
+    def g(inner, a, ox, oy):
+        return f'<g transform="rotate({a:.1f} {ox:.1f} {oy:.1f})">{inner}</g>'
+    bell = f"M{x - 11 * s:.1f} {y + 27 * s:.1f}C{x - 11 * s:.1f} {y + 13 * s:.1f} {x - 6 * s:.1f} {y + 8 * s:.1f} {x:.1f} {y + 8 * s:.1f}C{x + 6 * s:.1f} {y + 8 * s:.1f} {x + 11 * s:.1f} {y + 13 * s:.1f} {x + 11 * s:.1f} {y + 27 * s:.1f}Z"
+    ink = (f'<path d="M{x:.1f} {y:.1f}V{y + 8 * s:.1f}" stroke="{INK}" stroke-width="{0.9 * s:.2f}" />'
+           f'<path d="{bell}" fill="{PAPER}" stroke="{INK}" stroke-width="{1.3 * s:.2f}" stroke-linejoin="round" />'
+           f'<path d="M{x + 2 * s:.1f} {y + 10 * s:.1f}C{x + 7 * s:.1f} {y + 12 * s:.1f} {x + 9 * s:.1f} {y + 18 * s:.1f} {x + 9 * s:.1f} {y + 26 * s:.1f}H{x + 3 * s:.1f}Z" fill="url(#toneFine)" />'
+           f'<path d="M{x - 6 * s:.1f} {y + 19 * s:.1f}c{1.6 * s:.1f} {-2.4 * s:.1f} {5.4 * s:.1f} {-2.4 * s:.1f} {7 * s:.1f} 0c{-1.6 * s:.1f} {2.4 * s:.1f} {-5.4 * s:.1f} {2.4 * s:.1f} {-7 * s:.1f} 0zm{7 * s:.1f} 0l{2.6 * s:.1f} {-2 * s:.1f}v{4 * s:.1f}z" fill="{INK}" />'
+           f'<path d="M{x - 7.6 * s:.1f} {y + 22 * s:.1f}C{x - 8 * s:.1f} {y + 16 * s:.1f} {x - 6 * s:.1f} {y + 12.4 * s:.1f} {x - 3 * s:.1f} {y + 11 * s:.1f}" fill="none" stroke="{INK}" stroke-width="{0.6 * s:.2f}" stroke-linecap="round" opacity="0.55" />'
+           f'<ellipse cx="{x:.1f}" cy="{y + 27 * s:.1f}" rx="{11 * s:.1f}" ry="{1.9 * s:.1f}" fill="{PAPER}" stroke="{INK}" stroke-width="{1 * s:.2f}" />')
+    sx, sy = x, y + 27 * s
+    strip_ink = (f'<path d="M{sx:.1f} {sy - 14 * s:.1f}V{sy + 9 * s:.1f}" stroke="{INK}" stroke-width="{0.8 * s:.2f}" />'
+                 f'<circle cx="{sx:.1f}" cy="{sy + 3 * s:.1f}" r="{1.9 * s:.1f}" fill="{PAPER}" stroke="{INK}" stroke-width="{0.8 * s:.2f}" />')
+    strip_red = (f'<rect x="{sx - 4.6 * s:.1f}" y="{sy + 9 * s:.1f}" width="{9.2 * s:.1f}" height="{25 * s:.1f}" fill="{red}" />'
+                 f'<path d="M{sx - 2.2 * s:.1f} {sy + 15 * s:.1f}h{4.4 * s:.1f}M{sx:.1f} {sy + 13 * s:.1f}v{14 * s:.1f}M{sx - 2.2 * s:.1f} {sy + 21 * s:.1f}h{4.4 * s:.1f}" stroke="#ffffff" stroke-width="{0.9 * s:.2f}" stroke-linecap="round" opacity="0.9" />')
+    return (g(ink + g(strip_ink, paper, sx, sy - 14 * s), tilt, x, y),
+            g(g(strip_red, paper, sx, sy - 14 * s), tilt, x, y))
+
 
 BASE_CSS = BASE_CSS + EXTRA_CSS + TITLE_CSS + SCENE_CSS + _hb_keyframes()
 DEFS = DEFS + (f'<linearGradient id="streak" gradientUnits="userSpaceOnUse" x1="0" y1="-46" x2="0" y2="-12"><stop offset="0" stop-color="{INK}" stop-opacity="0" />'

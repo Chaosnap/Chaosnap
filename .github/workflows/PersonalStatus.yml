@@ -107,7 +107,7 @@ jobs:
           outputs: |
             profile/snake-raw.svg?color_snake=#15171d&color_dots=#e4e1db,#c9c6bf,#9a978f,#5d5b56,#15171d
 
-      # 从卡片里读出数据，重画成静态的黑白漫画风卡片（浅色 / 深色两版）；贪吃蛇是主页上唯一还在动的一张
+      # 从卡片里读出数据，重画成和モダン的卡片（浅色 / 深色两版）；统计和语言合成一张，贪吃蛇画成墨点上的一筆書き
       - name: Decorate cards
         run: python3 .github/scripts/decorate.py
 
