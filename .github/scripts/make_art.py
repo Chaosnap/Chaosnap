@@ -219,71 +219,76 @@ def title(i, name, english, japanese):
     art.write(OUT, f"title-{name}")
 
 
-# ---------------------------------------------------------------- 分隔线：一根笔直的长绳，密密挂满抽象的御守、风铃和铃铛（静态，墨·纸·朱）
+# ---------------------------------------------------------------- 分隔线：一根红白的绳，对称地挂着风铃和御守（和头图同一种线稿，静态）
+def omamori_art(x, y, hang, s, body, label_ink, cord, jp):
+    """一只线稿御守（挂点在 (x, y)）：吊绳、叶结（两只小环 + 两根短尾）、上角斜切的布袋（右半边网点做出厚度）、
+    袋口一道横纹、正中一条白签，竖写“御守”。"""
+    def P(dx, dy):
+        return f"{x + dx * s:.1f} {y + dy * s:.1f}"
+    k = hang
+    bag = (f"M{P(-11, k + 10)}L{P(-8, k + 7)}H{x + 8 * s:.1f}L{P(11, k + 10)}V{y + (k + 38) * s:.1f}"
+           f"Q{P(11, k + 41)} {P(8, k + 41)}H{x - 8 * s:.1f}Q{P(-11, k + 41)} {P(-11, k + 38)}Z")
+    txt = "".join(f'<text x="{x:.1f}" y="{y + (k + 21 + 8.6 * i) * s:.1f}" text-anchor="middle" style="font: 800 {7.4 * s:.1f}px {MINCHO_STACK}; fill: {label_ink}">{c}</text>' for i, c in enumerate("御守"))
+    return (f'<path d="M{P(0, 0)}V{y + (k + 4) * s:.1f}" stroke="{cord}" stroke-width="{1 * s:.2f}" />'
+            f'<path d="M{P(0, k + 4)}c{-3 * s:.1f} {-3 * s:.1f} {-7 * s:.1f} {-1 * s:.1f} {-5 * s:.1f} {2 * s:.1f}c{1.4 * s:.1f} {2 * s:.1f} {4 * s:.1f} {0.6 * s:.1f} {5 * s:.1f} {-2 * s:.1f}'
+            f'c{1 * s:.1f} {2.6 * s:.1f} {3.6 * s:.1f} {4 * s:.1f} {5 * s:.1f} {2 * s:.1f}c{2 * s:.1f} {-3 * s:.1f} {-2 * s:.1f} {-5 * s:.1f} {-5 * s:.1f} {-2 * s:.1f}'
+            f'M{P(-1, k + 5)}l{-2 * s:.1f} {3 * s:.1f}M{P(1, k + 5)}l{2 * s:.1f} {3 * s:.1f}" fill="none" stroke="{cord}" stroke-width="{1.1 * s:.2f}" stroke-linecap="round" />'
+            f'<clipPath id="omc{x:.0f}"><path d="{bag}" /></clipPath>'
+            f'<path d="{bag}" fill="{body}" />'
+            f'<g clip-path="url(#omc{x:.0f})"><rect x="{x + 3 * s:.1f}" y="{y + (k + 6) * s:.1f}" width="{10 * s:.1f}" height="{38 * s:.1f}" fill="url(#toneFine)" opacity="0.6" /></g>'
+            f'<path d="M{P(-11, k + 13)}H{x + 11 * s:.1f}" stroke="{INK}" stroke-width="{0.8 * s:.2f}" />'
+            f'<rect x="{x - 4.4 * s:.1f}" y="{y + (k + 15.5) * s:.1f}" width="{8.8 * s:.1f}" height="{21 * s:.1f}" fill="{PAPER}" stroke="{INK}" stroke-width="{0.7 * s:.2f}" />'
+            + txt +
+            f'<path d="{bag}" fill="none" stroke="{INK}" stroke-width="{1.3 * s:.2f}" stroke-linejoin="round" />')
+
+
 def divider():
-    """笔直的一根绳（短斜线表示绞股），下面密密地挂着三种抽象的小物：御守（斜切的方袋 + 花结）、风铃（半圆的钟 + 短册）、铃铛（圆 + 一道缝）。
-    只有墨、纸、朱三色：墨层在深色版里自动反相，朱色换夜间红，所以浅深两版都干净。完全静态。"""
-    W, H = 900, 62
-    x0, x1, top = 8, W - 8, 10
+    """一根笔直的红白绳（比页面窄），中间一只风铃，两边对称地挂着御守、再外面两只小风铃。
+    风铃用头图那只（manga.chime）的线稿、去掉摆动；御守是同一种线稿。只有墨、纸、朱：墨层在深色版里自动反相。完全静态。
+    上下留白一样多（卡片在上、分区标题在下；标题图自己顶上还有一点空，所以这里下面少留一点）。"""
+    jp = load_font(MINCHO, 800, "御守涼音")
+    W = 760
+    top = 14                      # 绳的高度（上面留白）
+    x0, x1 = 24, W - 24
+    c = W / 2
+    items = [  # (x, 种类, 缩放, 吊长)：中间大、往外渐小，左右对称
+        (c, "chime", 0.8, 0),
+        (c - 68, "om_red", 1.15, 5), (c + 68, "om_red", 1.15, 5),
+        (c - 134, "chime", 0.64, 3), (c + 134, "chime", 0.64, 3),
+        (c - 196, "om_ink", 1.02, 4), (c + 196, "om_ink", 1.02, 4),
+        (c - 254, "chime", 0.52, 2), (c + 254, "chime", 0.52, 2),
+        (c - 306, "om_red", 0.88, 3), (c + 306, "om_red", 0.88, 3),
+    ]
+    bottom = max(top + 90 * sc + hang if kind == "chime" else top + (hang + 41) * sc for _, kind, sc, hang in items)
+    # 上下留白相等：绳上面留 12；下面的分区标题图自己顶上还空出约 5px，所以这里下面只留 6.5
+    H = round(bottom + 6.5)
     art = Art(W, H, role="presentation", lean=True)
-    sw = 'stroke-linejoin="round" stroke-linecap="round"'
-
-    def omamori(fill, label, hang):
-        y = hang
-        return (f'<path d="M0 0V{y + 1}" stroke="{INK}" stroke-width="0.7" />'
-                f'<path d="M-2.2 {y + 1.6}a2 1.3 0 1 1 2.2 0a2 1.3 0 1 1 2.2 0" fill="none" stroke="{INK}" stroke-width="0.8" />'
-                f'<path d="M-5 {y + 5}L-3.5 {y + 3.5}H3.5L5 {y + 5}V{y + 19}Q5 {y + 20.5} 3.5 {y + 20.5}H-3.5Q-5 {y + 20.5} -5 {y + 19}Z" fill="{fill}" stroke="{INK}" stroke-width="0.9" {sw} />'
-                f'<path d="M-5 {y + 6.8}H5" stroke="{label}" stroke-width="0.7" />'
-                f'<rect x="-1.5" y="{y + 9}" width="3" height="8.6" rx="0.4" fill="none" stroke="{label}" stroke-width="0.7" />')
-
-    def furin(strip, hang):
-        y = hang
-        return (f'<path d="M0 0V{y}" stroke="{INK}" stroke-width="0.7" />'
-                f'<path d="M-6 {y + 8}C-6 {y + 2.5} -3.4 {y} 0 {y}C3.4 {y} 6 {y + 2.5} 6 {y + 8}Z" fill="{PAPER}" stroke="{INK}" stroke-width="0.9" {sw} />'
-                f'<path d="M-6.4 {y + 8}H6.4" stroke="{INK}" stroke-width="1" stroke-linecap="round" />'
-                f'<path d="M0 {y + 4}V{y + 12.5}" stroke="{INK}" stroke-width="0.6" />'
-                f'<rect x="-1.7" y="{y + 12.5}" width="3.4" height="10" fill="{strip}" stroke="{INK}" stroke-width="0.6" />')
-
-    def suzu(fill, hang):
-        y = hang
-        return (f'<path d="M0 0V{y}" stroke="{INK}" stroke-width="0.7" />'
-                f'<circle cx="0" cy="{y + 4.6}" r="4.6" fill="{fill}" stroke="{INK}" stroke-width="0.9" />'
-                f'<path d="M-4.4 {y + 4}H4.4" stroke="{PAPER if fill == INK else INK}" stroke-width="0.6" />'
-                f'<path d="M0 {y + 6}V{y + 9}" stroke="{PAPER if fill == INK else INK}" stroke-width="1" stroke-linecap="round" />')
-    # 绳：一道墨线，上面一排短斜线表示绞股；两端各一个朱色的结和短穗
-    rope = (f'<path d="M{x0} {top}H{x1}" stroke="{INK}" stroke-width="1.6" />'
-            + f'<path d="{"".join(f"M{x:.1f} {top - 1.6}l2 3.2" for x in range(x0 + 4, x1 - 4, 4))}" stroke="{PAPER}" stroke-width="0.6" />'
-            + "".join(f'<circle cx="{x}" cy="{top}" r="2.6" fill="{RED}" /><path d="M{x - 1.2} {top + 2}v9M{x} {top + 2}v11M{x + 1.2} {top + 2}v9" stroke="{RED}" stroke-width="0.7" />' for x in (x0, x1)))
-    # 一排小物：间距 15，前后一高一低错开；朱色只给一小部分做点缀
-    kinds = ["om", "fu", "su", "om", "fu", "om", "su", "fu"]
-    pitch = 15
-    xs = [x for x in range(x0 + 20, x1 - 16, pitch)]
-    defs, uses = {}, []
-    for i, x in enumerate(xs):
-        kind = kinds[i % len(kinds)]
-        hang = 3 if i % 2 == 0 else 13
-        accent = i % 7 == 3
-        if kind == "om":
-            fill, label = ((RED, PAPER) if accent else (INK, PAPER) if i % 3 == 0 else (PAPER, INK))
-            key = f"om_{fill}_{hang}"
-            defs.setdefault(key, omamori(fill, label, hang))
-        elif kind == "fu":
-            strip = RED if accent or i % 5 == 0 else PAPER
-            key = f"fu_{strip}_{hang}"
-            defs.setdefault(key, furin(strip, hang))
+    art.css.append(jp.css() if jp else "")
+    rope_d = f"M{x0} {top}H{x1}"
+    ink, red = [], []
+    ink.append(f'<path d="{rope_d}" stroke="{PAPER}" stroke-width="2.6" stroke-dasharray="2.6 2.6" stroke-dashoffset="2.6" />')
+    red.append(f'<path d="{rope_d}" stroke="{RED}" stroke-width="2.6" stroke-dasharray="2.6 2.6" />')
+    ink.append(f'<path d="{rope_d}" stroke="{INK}" stroke-width="3.6" stroke-opacity="0.22" />')
+    for x in (x0, x1):  # 两头：一个结、三根短穗
+        red.append(f'<circle cx="{x}" cy="{top}" r="3.2" fill="{RED}" /><path d="M{x - 1.4} {top + 2.6}v10M{x} {top + 2.6}v12M{x + 1.4} {top + 2.6}v10" stroke="{RED}" stroke-width="0.8" stroke-linecap="round" />')
+    for x, kind, sc, hang in items:
+        if kind == "chime":
+            c = chime(f"dv{x:.0f}", x, top + hang, sc, "涼").replace(' class="chime"', "").replace(' class="chime-paper"', "")
+            if hang:
+                ink.append(f'<path d="M{x} {top}V{top + hang}" stroke="{INK}" stroke-width="0.8" />')
+            ink.append(c)
+        elif kind == "om_red":
+            red.append(omamori_art(x, top, hang, sc, RED, RED, RED, jp).replace(f'fill="{PAPER}" stroke="{INK}" stroke-width="{0.7 * sc:.2f}"', f'fill="#ffffff" stroke="{INK}" stroke-width="{0.7 * sc:.2f}"'))
         else:
-            fill = RED if accent else (INK if i % 4 == 2 else PAPER)
-            key = f"su_{fill}_{hang}"
-            defs.setdefault(key, suzu(fill, hang))
-        uses.append((key, x))
-    ids = {k: f"d{n}" for n, k in enumerate(defs)}
-
-    def body(mode):
-        conv = (lambda t: t) if mode == "light" else (lambda t: to_night(t).replace(RED, NIGHT_RED))
-        d = "".join(f'<g id="{ids[k]}">{conv(v)}</g>' for k, v in defs.items())
-        return (f'<defs>{d}</defs>' + conv(rope)
-                + "".join(f'<use href="#{ids[k]}" x="{x}" y="{top}" />' for k, x in uses))
-    art.color(body("light"), body("dark"))
+            ink.append(omamori_art(x, top, hang, sc, PAPER, INK, INK, jp))
+    # 绳先画（红白两色叠出绞股），再挂件
+    art.ink(ink[2])
+    art.color(*both("".join(red[:1])))
+    art.ink(ink[0])
+    art.color(*both("".join(red[1:3])))
+    art.ink("".join(ink[3:]))
+    reds = "".join(red[3:])
+    art.color(reds, to_night(reds).replace(RED, NIGHT_RED))
     art.write(OUT, "divider")
 
 
@@ -314,28 +319,38 @@ def wave_d(segs, cy, flip=1, start=True):
     return out
 
 
-def cumulus(base):
-    """入道云：一团团圆叠成塔，墨色外轮廓、平平的云底，背光的下半部铺网点。静态。"""
-    rows = [(base - 24, [(694, 30), (738, 36), (788, 38), (838, 34), (884, 32)]),
-            (base - 66, [(718, 28), (762, 36), (810, 32), (854, 28)]),
-            (base - 106, [(744, 26), (788, 32), (828, 24)]),
-            (base - 140, [(770, 23), (804, 21)]),
-            (base - 166, [(788, 17)])]
-    circ = [(x, y, r) for y, row in rows for x, r in row]
-    union = "".join(f'<circle cx="{x}" cy="{y}" r="{r}" />' for x, y, r in circ)
-    ring = "".join(f'<circle cx="{x}" cy="{y}" r="{r + 1.6}" />' for x, y, r in circ)
-    bumps = []
-    for x, y, r in circ[5:]:
-        a0, a1 = math.radians(150), math.radians(250)
-        bumps.append(f"M{x + r * math.cos(a0):.1f} {y + r * math.sin(a0):.1f}A{r} {r} 0 0 1 {x + r * math.cos(a1):.1f} {y + r * math.sin(a1):.1f}")
-    return (f'<clipPath id="cuBase"><rect x="600" y="0" width="320" height="{base}" /></clipPath>'
+def cumulus(base, cx=770):
+    """入道云（漫画画法，手排的鼓包）：宽宽的云脚、两边肩膀一层层往上收、顶上一团云冠，略向右倾。
+    所有圆先描一圈墨、再整体盖纸，只留外面那道起伏的轮廓；整团铺网点，再盖上每团往左上挪的“受光圆”，
+    网点于是只留在鼓包右下和鼓包之间的缝里（光从左上来）；几团关键的鼓包往里描一段弧，表示前后叠着。静态。"""
+    lobes = [  # (dx, dy, r, 往里描弧的角度区间 或 None)
+        (-120, -15, 20, None), (-98, -30, 29, (-30, 60)), (-80, -66, 31, (-20, 75)), (-64, -101, 27, (-10, 80)),
+        (-48, -131, 24, (0, 85)), (-30, -156, 21, None), (-10, -171, 20, (20, 120)), (12, -177, 22, (40, 150)),
+        (33, -167, 18, None), (48, -144, 23, (95, 190)), (62, -114, 27, (100, 195)), (76, -82, 30, (105, 200)),
+        (92, -48, 32, (110, 200)), (112, -22, 25, None), (130, -11, 17, None),
+        (-58, -18, 30, None), (-14, -20, 32, None), (34, -18, 32, None), (74, -16, 30, None),
+    ]
+    fill = [(-40, -50, 46), (12, -50, 50), (52, -48, 38), (-22, -96, 44), (22, -104, 42), (-6, -138, 32), (16, -142, 30), (40, -80, 36)]
+    circ = [(cx + dx, base + dy, r, arc) for dx, dy, r, arc in lobes] + [(cx + dx, base + dy, r, None) for dx, dy, r in fill]
+    ring = "".join(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r + 1.4:.1f}" />' for x, y, r, _ in circ)
+    union = "".join(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r:.1f}" />' for x, y, r, _ in circ)
+    lit = "".join(f'<circle cx="{x - r * 0.3:.1f}" cy="{y - r * 0.34:.1f}" r="{r * 0.84:.1f}" />' for x, y, r, _ in circ)
+    arcs = []
+    for x, y, r, arc in circ:
+        if not arc:
+            continue
+        a0, a1 = (math.radians(t) for t in arc)
+        arcs.append(f"M{x + r * math.cos(a0):.1f} {y + r * math.sin(a0):.1f}A{r} {r} 0 0 1 {x + r * math.cos(a1):.1f} {y + r * math.sin(a1):.1f}")
+    return (f'<defs><clipPath id="cuBase"><rect x="560" y="0" width="360" height="{base}" /></clipPath>'
             f'<clipPath id="cuBody">{union}</clipPath>'
-            f'<linearGradient id="cuFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{PAPER}" /><stop offset="1" stop-color="{PAPER}" stop-opacity="0" /></linearGradient>'
+            f'<linearGradient id="cuFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{PAPER}" /><stop offset="1" stop-color="{PAPER}" stop-opacity="0" /></linearGradient></defs>'
             f'<g clip-path="url(#cuBase)"><g fill="{INK}">{ring}</g><g fill="{PAPER}">{union}</g>'
-            f'<g clip-path="url(#cuBody)"><rect x="640" y="{base - 90}" width="280" height="90" fill="url(#tone)" fill-opacity="0.6" />'
-            f'<rect x="640" y="{base - 91}" width="280" height="60" fill="url(#cuFade)" />'
-            f'<path d="{"".join(bumps)}" fill="none" stroke="{INK}" stroke-width="0.9" stroke-linecap="round" stroke-opacity="0.75" /></g></g>'
-            f'<path d="M{664} {base}H{900}" stroke="{INK}" stroke-width="1.2" />')
+            f'<g clip-path="url(#cuBody)"><rect x="580" y="{base - 210}" width="340" height="210" fill="url(#tone)" fill-opacity="0.6" />'
+            f'<g fill="{PAPER}">{lit}</g>'
+            f'<rect x="580" y="{base - 40}" width="340" height="40" fill="url(#toneFine)" fill-opacity="0.8" />'
+            f'<rect x="580" y="{base - 41}" width="340" height="26" fill="url(#cuFade)" />'
+            f'<path d="{"".join(arcs)}" fill="none" stroke="{INK}" stroke-width="1" stroke-linecap="round" stroke-opacity="0.85" /></g></g>'
+            f'<path d="M{cx - 146:.0f} {base}H{cx + 152:.0f}" stroke="{INK}" stroke-width="1.3" stroke-linecap="round" />')
 
 
 def now_playing():
@@ -362,7 +377,13 @@ def now_playing():
     art.defs.append(inside(W, H) + paper_fade("skyUp"))
 
     # ---- 天空、入道云、电线 ----
-    cl = cumulus(206)
+    # 和头图同一种画法的积雨云（manga.cloud）；云底以下那截平切掉，像头图里被屋顶挡住一样
+    # 云脚不硬切：往下渐渐化进地平线的薄雾里（一层“透明→纸色”的渐变盖在云的下半截）
+    cl = (f'<clipPath id="cloudCut"><rect x="560" y="0" width="340" height="262" /></clipPath>'
+          f'<linearGradient id="haze" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{PAPER}" stop-opacity="0" />'
+          f'<stop offset="0.55" stop-color="{PAPER}" stop-opacity="0.75" /><stop offset="1" stop-color="{PAPER}" /></linearGradient>'
+          f'<g clip-path="url(#cloudCut)">' + re.sub(r'<rect [^>]*height="400"[^>]*/>', "", cloud("np", 772, 240, 300, 178, 3, shade_left=False).replace('<g class="cloud"', "<g")) + "</g>"
+          f'<rect x="560" y="176" width="340" height="88" fill="url(#haze)" />')
     wires = (f'<path d="M12 58Q450 112 888 46" fill="none" stroke="{INK}" stroke-width="1.5" />'
              f'<path d="M12 72Q450 128 888 60" fill="none" stroke="{INK}" stroke-width="1" />')
     art.ink(panel(W, H) + f'<g clip-path="url(#inside)">'
@@ -370,19 +391,15 @@ def now_playing():
             f'{cl}{wires}'
             f'<g transform="rotate(-7 600 40)"><text class="np-sfx" x="576" y="48">ミーン</text><text class="np-sfx" x="590" y="68" style="font-size:13px">ミンミン…</text></g></g>')
 
-    # ---- 风铃：挂在上面那根电线的右端，每 6.4 秒一阵风 ----
-    fx, fy = 842, 54
-    poses = [(5, 16), (-4, -12), (3, 9), (-2, -6), (1.2, 3.5), (-0.5, -1.5)]
-    dur, t0 = 0.16, 2.4
-    hide = f'<set attributeName="visibility" to="hidden" begin="fw.begin+{t0:.2f}s" dur="{dur * len(poses):.2f}s" />'
-    ri, rc = furin(fx, fy, 1.0)
-    fi, fc = [clock("fw", 6.4), f"<g>{ri}{hide}</g>"], [f"<g>{rc}{hide}</g>"]
-    for i, (tilt, paper) in enumerate(poses):
-        pi, pc = furin(fx, fy, 1.0, tilt, paper)
-        fi.append(cel("fw", [(t0 + i * dur, dur)], pi))
-        fc.append(cel("fw", [(t0 + i * dur, dur)], pc))
-    art.ink(f'<g clip-path="url(#inside)">{"".join(fi)}</g>')
-    art.color(*both(f'<g clip-path="url(#inside)">{"".join(fc)}</g>'))
+    # ---- 风铃：和头图同一只（manga.chime）：铃身轻轻来回摆，短册慢半拍 ----
+    art.css.append(f"""
+  .chime {{ animation: chimeSwing 4.8s {EASE} infinite; }}
+  .chime-paper {{ animation: paperSwing 4.8s {EASE} infinite; animation-delay: -0.5s; }}
+  @keyframes chimeSwing {{ 0%, 100% {{ transform: rotate(5deg); }} 50% {{ transform: rotate(-5deg); }} }}
+  @keyframes paperSwing {{ 0%, 100% {{ transform: rotate(13deg); }} 50% {{ transform: rotate(-13deg); }} }}
+  @media (prefers-reduced-motion: reduce) {{ .chime, .chime-paper {{ animation: none; }} }}
+""")
+    art.ink(f'<g clip-path="url(#inside)">{chime("np", 838, 52, 0.82, "涼")}</g>')
 
     # ---- 声波：横贯底部的一条“丝带”——七根细线相位依次错开，拧成一股，正中一根略粗；一根朱线以别的频率穿过去。两端用渐变描边淡出 ----
     F, FRAME = 20, 0.08
@@ -574,6 +591,44 @@ def still_hanabi(prefix, spots, rng, mode):
     return "".join(defs), "".join(body)
 
 
+def hanabi_cycle(prefix, spots, rng, mode, period=6.4, tick=0.16):
+    """会动的夜空花火：每一发 升空（三格）→ 炸开（两格，由小到大）→ 盛开（停留三秒半）→ 变成灰烬往下飘、渐渐淡掉（四格），然后暗下来等下一轮。
+    八发错开起点，任何时候都有五六朵正开着。花火的形状只在 <defs> 里画一次（彩色一份、灰烬一份），每一格只是一只 <use> 换位置、大小和透明度；
+    所有换格时刻对齐到 0.16 秒的整数倍，整张漫画页一秒最多重画六次。不跑动画的环境里显示全部盛开的定格。"""
+    pal = FW_DAY if mode == "light" else FW_NIGHT
+    ash = "#a19e96" if mode == "light" else "#5d6470"
+    defs, frames, still = [], [clock(prefix + "k", period)], []
+    n = len(spots)
+
+    def spans(at, dur, t0):
+        st = (t0 + at) % period
+        if st + dur <= period + 1e-6:
+            return [(st, dur)]
+        return [(st, period - st), (0.0, dur - (period - st))]
+    for i, (x, y, r, kind) in enumerate(spots):
+        g, b = firework(f"{prefix}{i}", kind, 0, 0, r, SCHEMES[(i * 3 + 2) % len(SCHEMES)], 6, 0, rng, mode)
+        b = re.sub(r'<circle class="fw-(?:rise|flash)"[^>]*/>', "", b)
+        b = re.sub(r'<g class="fw" style="[^"]*">', "<g>", b).replace(' class="fw-glint"', "")
+        gray = re.sub(r"url\(#fg[^)]*\)", ash, re.sub(r"#[0-9a-fA-F]{6}", ash, b))
+        defs.append(g + f'<g id="{prefix}c{i}">{b}</g><g id="{prefix}a{i}">{gray}</g>')
+        still.append(f'<use href="#{prefix}c{i}" transform="translate({x} {y})" />')
+        t0 = round(i * period / n / tick) * tick
+        spark = pal["gold"] if mode == "light" else "#fff3cf"
+        rise = 150
+        for k, u in enumerate((0.0, 0.5, 0.85)):  # 升空：一颗光点拖着越来越短的尾巴
+            yy = y + rise * (1 - u) ** 1.6
+            frames.append(cel(prefix + "k", spans(k * tick, tick, t0),
+                              f'<path d="M{x} {yy:.0f}v{26 * (1 - u) + 8:.0f}" stroke="{spark}" stroke-width="1.6" stroke-linecap="round" stroke-opacity="0.75" /><circle cx="{x}" cy="{yy:.0f}" r="2.2" fill="{spark}" />'))
+        for k, sc in enumerate((0.45, 0.8)):  # 炸开
+            frames.append(cel(prefix + "k", spans((3 + k) * tick, tick, t0), f'<use href="#{prefix}c{i}" transform="translate({x} {y}) scale({sc})" />'))
+        frames.append(cel(prefix + "k", spans(5 * tick, 22 * tick, t0), f'<use href="#{prefix}c{i}" transform="translate({x} {y})" />'))  # 盛开（3.5 秒）
+        for k, (dy, op, sc) in enumerate(((3, 0.8, 1.02), (9, 0.6, 1.04), (17, 0.4, 1.06), (27, 0.2, 1.08))):  # 灰烬往下飘
+            frames.append(cel(prefix + "k", spans((27 + 2 * k) * tick, 2 * tick, t0),
+                              f'<use href="#{prefix}a{i}" transform="translate({x} {y + dy}) scale({sc})" opacity="{op}" />'))
+    body = "".join(frames) + poster("".join(still))
+    return "".join(defs), body
+
+
 def crackle(spots, rng, mode, period=3.2):
     """火星：三阵、每阵三格（0.12 秒一格），每格十来颗小四角星落在几朵花的外缘。只靠 <set> 翻页，一个周期只重画九次。"""
     pal = FW_DAY if mode == "light" else FW_NIGHT
@@ -605,13 +660,11 @@ def manga_page(F):
     ax = bx(16) - 12
 
     # A：天台的金网、夜空的花火、立绘、对话框、旁白、ザァ…
-    # 夜空里一直开着的花火（静态，彩色），再加一层很轻的“噼啪”：每 3.2 秒有三小阵火星在几朵花的外缘闪一下
+    # 夜空的花火：一发发升空、炸开、盛开，再化成灰烬飘落（见 hanabi_cycle）
     fw_spots = [(566, 300, 72, "kiku"), (662, 138, 50, "botan"), (330, 66, 58, "kamuro"), (692, 336, 42, "wa"),
                 (404, 226, 38, "botan"), (642, 44, 36, "kiku"), (520, 410, 40, "jelly"), (726, 436, 32, "botan")]
-    fl_defs, fl_body = still_hanabi("pl", fw_spots, random.Random(5), "light")
-    fd_defs, fd_body = still_hanabi("pd", fw_spots, random.Random(5), "dark")
-    fl_body += crackle(fw_spots, random.Random(9), "light")
-    fd_body += crackle(fw_spots, random.Random(9), "dark")
+    fl_defs, fl_body = hanabi_cycle("pl", fw_spots, random.Random(5), "light")
+    fd_defs, fd_body = hanabi_cycle("pd", fw_spots, random.Random(5), "dark")
     bubble_d = "M432 60C470 30 560 34 590 92C620 150 606 250 548 282C500 308 446 290 430 246L392 262L418 226C390 170 396 92 432 60Z"
     hello = vtext(HELLO, 530, 102, 22, "hello", 1.5)
     narr = vtext(NARRATION, 754, 52, 17, "narr", 1.75)

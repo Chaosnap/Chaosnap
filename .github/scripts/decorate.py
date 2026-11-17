@@ -19,14 +19,15 @@
 import datetime
 import math
 import pathlib
+import random
 import re
 import sys
 import xml.etree.ElementTree as ET
 from html import escape
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
-from manga import (GRAY, INK, MINCHO, MINCHO_STACK, NIGHT_RED, PAPER, RED, SERIF, SERIF_STACK,  # noqa: E402
-                   Art, cel, clock, load_font, poster, smooth, star)
+from manga import (GRAY, INK, MINCHO, MINCHO_STACK, NIGHT_INK, NIGHT_RED, PAPER, RED, SERIF, SERIF_STACK,  # noqa: E402
+                   Art, cel, clock, load_font, poster, smooth, star, to_night)
 
 PROFILE = pathlib.Path(__file__).resolve().parents[2] / "profile"
 NS = "{http://www.w3.org/2000/svg}"
@@ -387,7 +388,7 @@ def pin(name, index=1, count=1):
     X0, X1 = 26, W - 26
     lines = wrap(reg, desc, 12.5, X1 - X0 - 8, 2)
     # 右下角一枚空心的序号：No.01、No.02 …
-    body = [card(W, H), f'<text class="no" x="{X1 - 6}" y="{H - 20}" text-anchor="end">{index:02d}</text>',
+    body = [card(W, H),
             icon(OCTICON["repo"], X0, HEAD_Y - 14, 0.95, 0.75), f'<text class="h" x="{X0 + 24}" y="{HEAD_Y}" style="font-size:16px">{escape(repo)}</text>',
             rule(X0, X1, RULE_Y)]
     body += [f'<text class="d" x="{X0}" y="{86 + k * 19}">{escape(ln)}</text>' for k, ln in enumerate(lines)]
@@ -399,12 +400,6 @@ def pin(name, index=1, count=1):
     x += 18 + (reg.width(star_n, 12.5) if reg else 8 * len(star_n)) + 22
     if fork_n:
         body.append(icon(fork_d, x, y - 12, 0.8, 0.7) + f'<text class="d" x="{x + 18}" y="{y}">{escape(fork_n)}</text>')
-    # 简介末尾一根打字机光标，一亮一灭
-    last = lines[-1] if lines else ""
-    cx_ = X0 + (reg.width(last, 12.5) if reg else 6.6 * len(last)) + 4
-    cy_ = 86 + (len(lines) - 1) * 19
-    cursor = f'<rect x="{cx_:.1f}" y="{cy_ - 11}" width="1.5" height="13" fill="{INK}" fill-opacity="0.8" />'
-    body.append(clock("b", 1.6) + poster(cursor) + cel("b", [(0, 0.8)], cursor))
     art.ink("".join(body))
     art.color(*seal(X1, HEAD_Y - 18, "推"))
     art.write(PROFILE, name)
@@ -464,7 +459,7 @@ def activity():
     reg = load_font(SERIF, 400, summary + "0123456789" + "JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC ")
     jp = load_font(MINCHO, 800, "活動記録録" + "".join(MONTHS_JP))
     art = sheet(W, H, f"Activity graph: {total:g} contributions over the past {n} days, peak {vmax:g}")
-    art.css.append(base_css([bold, reg, jp], f"""  .peak {{ font: 700 12px {SERIF_STACK}; fill: {RED}; }}
+    art.css.append(base_css([bold, reg, jp], f"""  .sunv {{ font: 700 12px {SERIF_STACK}; fill: #ffffff; }}
   .fv {{ font: 700 11.5px {SERIF_STACK}; fill: {PAPER}; }}
   .fd {{ font: 400 8.5px {SERIF_STACK}; fill: {PAPER}; letter-spacing: 1.4px; fill-opacity: 0.8; }}
   .m {{ font-size: 9.5px; }}
@@ -477,22 +472,36 @@ def activity():
     ys = [py1 - (py1 - py0) * v / ymax for v in values]
     line = monotone(list(zip(xs, ys)))
     dx = (px1 - px0) / (n - 1)
-    art.defs.append(f'<linearGradient id="actFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{INK}" stop-opacity="0.24" />'
+    art.defs.append(f'<linearGradient id="actFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{INK}" stop-opacity="0.12" />'
                     f'<stop offset="1" stop-color="{INK}" stop-opacity="0" /></linearGradient>')
+    # 青海波：一片片半圆鳞，三道同心弧；铺在曲线下面，像一座座浪做的山
+    def scale(cx, cy):
+        arcs = "".join(f"M{cx - r} {cy}A{r} {r} 0 0 1 {cx + r} {cy}" for r in (10, 7, 4))
+        return (f'<path d="M{cx - 10} {cy}A10 10 0 0 1 {cx + 10} {cy}Z" fill="{PAPER}" />'
+                f'<path d="{arcs}" fill="none" stroke="{INK}" stroke-width="0.6" stroke-opacity="0.5" />')
+    art.defs.append(f'<pattern id="seigaiha" width="20" height="10" patternUnits="userSpaceOnUse" x="{px0}" y="{py1}">'
+                    + "".join(scale(cx, cy) for cx, cy in ((0, 5), (20, 5), (10, 10), (0, 15), (20, 15))) + "</pattern>"
+                    f'<clipPath id="under"><path d="{line}L{px1:.1f} {py1}L{px0:.1f} {py1}Z" /></clipPath>')
     body = [card(W, H), heading(X0, HEAD_Y, head, "活動記録", bold),
             f'<text class="s" x="{X1 - SEAL - 16}" y="{HEAD_Y - 1}" text-anchor="end">{summary}</text>', rule(X0, X1, RULE_Y)]
-    # 周末：一道很淡的竖带
-    body.append("".join(f'<rect x="{max(px0, x - dx / 2):.1f}" y="{py0 - 8}" width="{min(px1, x + dx / 2) - max(px0, x - dx / 2):.1f}" height="{py1 - py0 + 8}" fill="{INK}" fill-opacity="0.025" />'
-                        for x, d in zip(xs, dates) if d and d.weekday() >= 5))
-    # 三道发丝横线：0、一半、最高
+    # 霞：屏风画里那种横着的云带，淡淡地铺在背后
+    kasumi = [(px0 + 40, py0 + 6, 230), (px0 + 120, py0 + 24, 190), (px1 - 300, py0 + 14, 250), (px1 - 210, py0 + 32, 170)]
+    body.append("".join(f'<rect x="{x:.0f}" y="{y:.0f}" width="{w}" height="12" rx="6" fill="url(#toneFine)" fill-opacity="0.45" stroke="{INK}" stroke-width="0.6" stroke-opacity="0.28" />'
+                        for x, y, w in kasumi))
     for t in (0, ymax // 2, ymax):
         y = py1 - (py1 - py0) * t / ymax
         dash = "" if t == 0 else ' stroke-dasharray="1.5 3.5"'
         body.append(f'<path d="M{px0} {y:.1f}H{px1}" stroke="{INK}" stroke-width="0.6" stroke-opacity="{0.45 if t == 0 else 0.16}"{dash} />'
                     f'<text class="ax" x="{px0 - 14}" y="{y + 3.5:.1f}" text-anchor="end">{t}</text>')
-    body.append(f'<path class="fade" d="{line}L{px1:.1f} {py1}L{px0:.1f} {py1}Z" fill="url(#actFill)" />'
-                f'<path class="draw" pathLength="1" d="{line}" fill="none" stroke="{INK}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />')
-    dots = "".join(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="1.9" fill="{INK}" />' for x, y, v in zip(xs, ys, values) if v)
+    art.ink("".join(body))
+    # 日之丸：最高的那座“山”背后升起一轮朱日，日里写着最高的数
+    k = values.index(vmax)
+    sx, sy = xs[k], ys[k] - 6
+    art.color(*both(f'<g class="fade" style="animation-delay:1.2s"><circle cx="{sx:.1f}" cy="{sy:.1f}" r="15" fill="{RED}" /></g>'))
+    body = [f'<g class="fade"><rect x="{px0}" y="{py0 - 20}" width="{px1 - px0}" height="{py1 - py0 + 20}" fill="url(#seigaiha)" clip-path="url(#under)" />'
+            f'<path d="{line}L{px1:.1f} {py1}L{px0:.1f} {py1}Z" fill="url(#actFill)" /></g>',
+            f'<path class="draw" pathLength="1" d="{line}" fill="none" stroke="{INK}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />']
+    dots = "".join(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="1.9" fill="{INK}" />' for i, (x, y, v) in enumerate(zip(xs, ys, values)) if v and i != k)
     body.append(f'<g class="fade">{dots}</g>')
     # 日期：隔两天标一个（最后一天一定标），月份用汉字写在下面
     body.append("".join(f'<text class="ax" x="{x:.1f}" y="{py1 + 20}" text-anchor="middle">{escape(lb)}</text>'
@@ -501,11 +510,7 @@ def activity():
         if d and (d.day == 1 or i == 0):
             body.append(f'<text class="m" x="{xs[i] - (0 if i else 4):.1f}" y="{py1 + 40}" text-anchor="{"start" if i == 0 else "middle"}">{MONTHS_JP[d.month - 1]}</text>')
     art.ink("".join(body))
-    k = values.index(vmax)
-    peak = (f'<circle cx="{xs[k]:.1f}" cy="{ys[k]:.1f}" r="7" fill="none" stroke="{RED}" stroke-width="0.8" stroke-opacity="0.6" />'
-            f'<circle cx="{xs[k]:.1f}" cy="{ys[k]:.1f}" r="3.6" fill="{RED}" />'
-            f'<text class="peak" x="{xs[k]:.1f}" y="{ys[k] - 14:.1f}" text-anchor="middle">{vmax:g}</text>')
-    art.color(*both(f'<g class="fade" style="animation-delay:1.4s">{peak}</g>'))
+    art.color(f'<g class="fade" style="animation-delay:1.4s"><text class="sunv" x="{sx:.1f}" y="{sy + 4.3:.1f}" text-anchor="middle">{vmax:g}</text></g>')
 
     # 读数的游标：一天一格从左走到右
     FW, FH, fy = 84, 20, 76
@@ -570,12 +575,12 @@ def one_cup(x, y, tier, secret, s=1.0):
     bowl = "M-17 -22H17V-17C17 -3 9 5 0 5C-9 5 -17 -3 -17 -17Z"
     fill = {"S": INK, "A": "url(#tone)", "B": "url(#hatch)"}.get(tier, PAPER)
     tr = f'translate({x:.1f} {y:.1f}) scale({s})'
-    under = f'<path d="{bowl}" transform="{tr}" fill="{RED}" />' if secret else ""
+    under = ""  # 奖杯本身不带红：隐藏奖杯也画成实墨
     letter_fill = PAPER if tier == "S" or secret else INK
     halo = "" if tier == "S" or secret else f' stroke="{PAPER}" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round"'
     ink = (f'<g transform="{tr}">'
            f'<path d="M-17 -15C-28 -15 -27 0 -12 1M17 -15C28 -15 27 0 12 1" fill="none" stroke="{INK}" stroke-width="2" stroke-linecap="round" />'
-           + (f'<path d="{bowl}" fill="{PAPER}" fill-opacity="0" />' if secret else f'<path d="{bowl}" fill="{PAPER}" /><path d="{bowl}" fill="{fill}" />')
+           + f'<path d="{bowl}" fill="{PAPER}" /><path d="{bowl}" fill="{INK if secret else fill}" />'
            + f'<path d="{bowl}" fill="none" stroke="{INK}" stroke-width="1.5" stroke-linejoin="round" />'
            f'<rect x="-19.5" y="-25.5" width="39" height="5" rx="2" fill="{PAPER}" stroke="{INK}" stroke-width="1.3" />'
            f'<path d="M-3 5V12H3V5" fill="{PAPER}" stroke="{INK}" stroke-width="1.3" /><ellipse cx="0" cy="8.5" rx="5.4" ry="1.9" fill="{PAPER}" stroke="{INK}" stroke-width="1.1" />'
@@ -602,6 +607,52 @@ def cup(cx, cy, rank, secret):
     under.append(u)
     ink.append(i)
     return "".join(under), "".join(ink), ""
+
+
+PETAL = "M0 0C-3.6 -2.6 -4.6 -7.4 -2.3 -10.2L0 -8.6L2.3 -10.2C4.6 -7.4 3.6 -2.6 0 0Z"  # 一片樱花瓣：尖上一道小缺口
+SAKURA = {"light": (RED, "#a8231f", "#ffffff"), "dark": (NIGHT_RED, "#c23a3e", "#ffffff")}  # 花瓣用页面上现有的朱红，花心、花蕊留白
+
+
+def blossom(x, y, s, rot, mode):
+    """一朵樱花：五片带缺口的花瓣、深一点的花心和一圈花蕊。"""
+    fill, edge, core = SAKURA[mode]
+    petals = "".join(f'<path d="{PETAL}" transform="rotate({rot + 72 * k:.0f})" />' for k in range(5))
+    stamens = "".join(f'<circle cx="{3.4 * math.cos(math.radians(rot + 36 + 72 * k)):.1f}" cy="{3.4 * math.sin(math.radians(rot + 36 + 72 * k)):.1f}" r="0.55" />' for k in range(5))
+    return (f'<g transform="translate({x:.1f} {y:.1f}) scale({s})"><g fill="{fill}" stroke="{edge}" stroke-width="0.5" stroke-linejoin="round">{petals}</g>'
+            f'<circle r="1.7" fill="{core}" fill-opacity="0.9" /><g fill="{core}">{stamens}</g></g>')
+
+
+def petal(x, y, s, rot, mode, flat=1.0):
+    fill, edge, _ = SAKURA[mode]
+    return f'<path d="{PETAL}" transform="translate({x:.1f} {y:.1f}) rotate({rot:.0f}) scale({s} {s * flat:.2f})" fill="{fill}" stroke="{edge}" stroke-width="0.5" />'
+
+
+def sakura_layer(mode, W, X0, X1, SHELF, CY):
+    """奖杯柜旁的樱花：右上角伸进来一枝（墨色枝干、几簇花和花苞），左边陈列架尽头一小簇，几片花瓣飘在杯子之间、落在架子上。静态。"""
+    rng = random.Random(17)
+    ink = INK if mode == "light" else NIGHT_INK
+    fill, edge, core = SAKURA[mode]
+    # 枝干贴着标题线下面从右边伸进来，不压到杯子；最右边垂下一小枝，落在最后一只杯子右边的空处
+    branch = (f'<path d="M{W - 4} 63C{W - 40} 66 {W - 80} 70 {W - 120} 71C{W - 140} 71.5 {W - 160} 69 {W - 182} 66" fill="none" stroke="{ink}" stroke-width="2.6" stroke-linecap="round" />'
+              f'<path d="M{W - 120} 71C{W - 132} 76 {W - 146} 78 {W - 158} 78" fill="none" stroke="{ink}" stroke-width="1.2" stroke-linecap="round" />'
+              f'<path d="M{W - 34} 65C{W - 30} 80 {W - 32} 96 {W - 40} 112" fill="none" stroke="{ink}" stroke-width="1.4" stroke-linecap="round" />'
+              f'<path d="M{W - 70} 68C{W - 74} 62 {W - 80} 59 {W - 88} 58" fill="none" stroke="{ink}" stroke-width="1" stroke-linecap="round" />')
+    flowers = [(W - 182, 66, 0.8, 10), (W - 150, 70, 0.95, 40), (W - 112, 70, 0.85, 70), (W - 158, 79, 0.65, 20), (W - 62, 66, 0.9, 55),
+               (W - 33, 84, 0.8, 30), (W - 38, 103, 0.75, 5), (W - 42, 118, 0.6, 60), (W - 12, 64, 0.7, 25)]
+    buds = [(W - 196, 63), (W - 90, 59), (W - 28, 96), (W - 128, 75)]
+    out = [branch]
+    out += [f'<ellipse cx="{x}" cy="{y}" rx="2.2" ry="3" transform="rotate(-30 {x} {y})" fill="{fill}" stroke="{edge}" stroke-width="0.5" />'
+            f'<path d="M{x + 1} {y + 2.4}l1.4 2.2" stroke="{ink}" stroke-width="0.7" />' for x, y in buds]
+    out += [blossom(x, y, sc, rot, mode) for x, y, sc, rot in flowers]
+    # 左边陈列架尽头的一小簇
+    out += [blossom(X0 + 14, SHELF - 8, 0.9, 15, mode), blossom(X0 + 30, SHELF - 4, 0.7, 50, mode), blossom(X0 + 6, SHELF - 22, 0.6, 35, mode)]
+    # 飘着的花瓣、落在架子上的花瓣
+    col = (X1 - X0) / 6
+    for k in range(6):
+        gx = X0 + col * (k + 0.5)
+        out.append(petal(gx + col * 0.42, CY - 34 + rng.uniform(-8, 8), 0.75, rng.uniform(0, 360), mode))
+        out.append(petal(gx - col * 0.38 + rng.uniform(-6, 6), SHELF - 1.5, 0.7, rng.choice([80, 100, 260, 280]), mode, 0.55))
+    return "".join(out)
 
 
 def trophy():
@@ -648,12 +699,12 @@ def trophy():
                    f'<rect x="{cx - bw / 2:.1f}" y="{SHELF + 60}" width="{max(2.4, bw * t["prog"]):.1f}" height="2.4" rx="1.2" fill="{INK}" />'
                    f'<text class="tp" x="{cx:.1f}" y="{SHELF + 80}" text-anchor="middle">{escape(t["pt"])}</text>')
         # 杯口右上的“キラッ”：从左到右一只接一只地亮（三格）
-        sx, sy, red = cx + 23, CY - 27, t["rank"][:1] == "S" or t["secret"]
+        sx, sy, red = cx + 23, CY - 27, False  # 奖杯本身不带红
         for at, dur, rr in [(0, 0.08, 3.5), (0.08, 0.16, 7.5), (0.24, 0.08, 4.5)]:
             shine.append(cel("k", [(0.8 + k * 0.72 + at, dur)],
                              f'<path d="{star(sx, sy, rr)}" fill="{RED if red else INK}" />' + (f'<path d="{star(sx + 8, sy + 9, rr * 0.42)}" fill="{RED if red else INK}" />' if rr > 6 else "")))
-    art.ink(ink[0])  # 卡片底先铺，隐藏奖杯的朱色杯身垫在墨线下面
-    art.color(*both("".join(under)))
+    art.ink(ink[0])  # 卡片底先铺
+    art.color(sakura_layer("light", W, X0, X1, SHELF, CY), sakura_layer("dark", W, X0, X1, SHELF, CY))  # 樱花在杯子后面
     art.ink("".join(ink[1:]))
     ink_shine = "".join(s for s in shine if RED not in s)
     red_shine = "".join(s for s in shine[1:] if RED in s)
@@ -728,88 +779,81 @@ def snake_route(route, ox, oy, radius=7.0):
     return d + ("z" if closed else ""), total, closed, pts
 
 
-TAIL_POSES = [-13, -6, 3, 12, 5, -4]  # 尾鳍左右摆的角度，0.09 秒一格
+TAIL_POSES = [-14, -9, -2, 6, 13, 9, 2, -6]  # 尾鳍左右摆的角度，0.08 秒一格，八格一个来回
 
 
 def goldfish_parts(mode):
-    """一条更紗（红白花）琉金，从上往下看，头朝 +x，身体中心在原点。
-    身体：径向渐变（中间橙、边缘朱红）、白色的花斑、背上几排鳞片、一道背鳍线、腮线、鼓出来的眼睛；
-    胸鳍、腹鳍、两叶扇形的大尾巴都是半透明的，带鳍条，尾巴尾端渐渐透明。返回 (defs, 身体, 尾巴(角度), 胸鳍(角度), 影子)。"""
+    """一条更紗琉金（红白花、长尾），从上往下看，头朝 +x，身体中心在原点。
+    身体：径向渐变（背上橙、腹侧朱）、头顶和背鞍两块白斑、细鳞、金色虹膜的凸眼、一道半透明的背鳍；
+    胸鳍、腹鳍半透明带鳍条；尾巴是长长的两叶纱尾，外层浅、里层深，边缘起伏，鳍条细密，尾端渐渐透明。
+    返回 (defs, 身体, 尾巴(角度), 胸鳍(角度), 影子)。"""
     if mode == "light":
-        core, mid, edge, dark, scale, white = "#ff9b4f", "#ee5130", "#c22c22", "#9c1f1a", "#ffd9b5", "#fff7ef"
+        core, mid, edge, dark, scale, white, iris = "#ff9d52", "#ec4e2e", "#c02a22", "#8f1c18", "#ffd7b0", "#fff8f0", "#e6a93c"
     else:
-        core, mid, edge, dark, scale, white = "#ffad66", "#ff6a45", "#e2463a", "#b8322f", "#ffe2c4", "#fffaf4"
-    defs = (f'<radialGradient id="gfBody{mode}" cx="0.55" cy="0.42" r="0.62"><stop offset="0" stop-color="{core}" /><stop offset="0.55" stop-color="{mid}" /><stop offset="1" stop-color="{edge}" /></radialGradient>'
-            f'<linearGradient id="gfFin{mode}" gradientUnits="userSpaceOnUse" x1="-8" y1="0" x2="-33" y2="0"><stop offset="0" stop-color="{mid}" stop-opacity="0.9" /><stop offset="0.55" stop-color="{mid}" stop-opacity="0.55" /><stop offset="1" stop-color="{mid}" stop-opacity="0.15" /></linearGradient>')
-    body_d = "M14 0C14 -4.4 11 -7.4 5 -7.6C-0.5 -7.8 -5 -5 -8.8 -2C-9.8 -1.1 -9.8 1.1 -8.8 2C-5 5 -0.5 7.8 5 7.6C11 7.4 14 4.4 14 0Z"
-    lobe = ("M-8.6 -0.8C-12 -3.6 -16 -10 -24 -14C-27.5 -15.6 -31.5 -15 -32.8 -12.6C-31.2 -11.8 -30.6 -10.4 -31 -8.6C-29.4 -8 -28.6 -6.6 -29 -4.8"
-            "C-26.4 -3.8 -24 -2 -22.4 0H-8.6Z")
-    rays = "".join(f"M-9 -0.4L{x} {y}" for x, y in ((-24, -13.6), (-29, -12.8), (-30.4, -9), (-28.4, -5.4), (-23.6, -1.6)))
+        core, mid, edge, dark, scale, white, iris = "#ffb06a", "#ff6a46", "#e4483b", "#b3302d", "#ffe3c6", "#fffaf5", "#f2c060"
+    defs = (f'<radialGradient id="gfBody{mode}" cx="0.6" cy="0.45" r="0.6"><stop offset="0" stop-color="{core}" /><stop offset="0.6" stop-color="{mid}" /><stop offset="1" stop-color="{edge}" /></radialGradient>'
+            f'<linearGradient id="gfFin{mode}" gradientUnits="userSpaceOnUse" x1="-8" y1="0" x2="-40" y2="0"><stop offset="0" stop-color="{mid}" stop-opacity="0.85" />'
+            f'<stop offset="0.5" stop-color="{mid}" stop-opacity="0.5" /><stop offset="1" stop-color="{core}" stop-opacity="0.12" /></linearGradient>'
+            f'<linearGradient id="gfFinIn{mode}" gradientUnits="userSpaceOnUse" x1="-8" y1="0" x2="-30" y2="0"><stop offset="0" stop-color="{edge}" stop-opacity="0.75" /><stop offset="1" stop-color="{edge}" stop-opacity="0.08" /></linearGradient>')
+    body_d = "M15 0C15 -4.5 12.2 -7.5 6.4 -7.8C0.6 -8.1 -4.2 -5.6 -7.6 -2.7C-9 -1.5 -9 1.5 -7.6 2.7C-4.2 5.6 0.6 8.1 6.4 7.8C12.2 7.5 15 4.5 15 0Z"
+    # 一叶纱尾（上半；下半镜像）：边缘几道起伏，尾尖拉长
+    lobe = ("M-7.6 -1C-11 -3.8 -15.6 -10.6 -23.4 -15.4C-28 -18.2 -34 -19.4 -38.6 -17.2C-36.2 -16.4 -35 -14.6 -35.6 -12.4"
+            "C-33.4 -12 -32 -10.2 -32.6 -8C-30.4 -7.6 -29 -5.8 -29.6 -3.8C-27.2 -3.2 -25.4 -1.6 -24.6 0H-7.6Z")
+    inner = "M-7.6 -0.8C-10.6 -3 -14.2 -7.4 -19.6 -10.4C-22 -11.6 -25 -11.8 -26.8 -10.6C-24.6 -8.6 -23.2 -5.2 -21.6 0H-7.6Z"
+    rays = "".join(f"M-8.2 -0.4Q{(-8.2 + x) / 2 + 1:.1f} {y * 0.55:.1f} {x} {y}" for x, y in
+                   ((-23, -14.6), (-27.6, -16.8), (-32.6, -17.6), (-37.2, -16.6), (-35, -12.2), (-32.2, -7.8), (-29.2, -3.6), (-25.6, -0.6)))
 
     def tail(a):
-        half = (f'<path d="{lobe}" fill="url(#gfFin{mode})" stroke="{edge}" stroke-width="0.45" stroke-opacity="0.7" stroke-linejoin="round" />'
-                f'<path d="{rays}" stroke="{white}" stroke-width="0.45" stroke-opacity="0.45" />')
-        # 两叶尾巴不完全对称：外侧那叶多弯一点，看起来是在甩
-        return (f'<g transform="rotate({a} -8.6 0)"><g transform="rotate({a * 0.35:.1f} -8.6 0)">{half}</g>'
-                f'<g transform="scale(1 -1) rotate({-a * 0.35:.1f} -8.6 0)">{half}</g></g>')
-    pfin = "M4.6 -6.6C3.4 -10.4 0.2 -13 -2.6 -12.6C-2.2 -10.6 -0.4 -8.2 4.6 -6.6Z"
-    pray = "M4.2 -6.8L-1.6 -12.2M4.2 -6.8L-2.2 -10.2M4.2 -6.8L-0.4 -12.8"
+        half = (f'<path d="{lobe}" fill="url(#gfFin{mode})" stroke="{edge}" stroke-width="0.4" stroke-opacity="0.65" stroke-linejoin="round" />'
+                f'<path d="{inner}" fill="url(#gfFinIn{mode})" />'
+                f'<path d="{rays}" fill="none" stroke="{white}" stroke-width="0.35" stroke-opacity="0.5" />')
+        return (f'<g transform="rotate({a} -7.6 0)"><g transform="rotate({a * 0.45:.1f} -7.6 0)">{half}</g>'
+                f'<g transform="scale(1 -1) rotate({-a * 0.3:.1f} -7.6 0)">{half}</g></g>')
+    pfin = "M5.4 -6.8C4.4 -11.4 0.8 -14.6 -2.6 -14.2C-2.2 -11.6 -0.2 -8.8 5.4 -6.8Z"
+    pray = "M5 -7L-1.8 -13.6M5 -7L-2.4 -11.6M5 -7L-0.2 -14.2M5 -7L-2 -9.6"
 
     def fins(a):
-        one = f'<path d="{pfin}" fill="{mid}" fill-opacity="0.55" stroke="{edge}" stroke-width="0.4" stroke-opacity="0.6" /><path d="{pray}" stroke="{white}" stroke-width="0.35" stroke-opacity="0.5" />'
-        return (f'<g transform="rotate({a} 4.6 -6.6)">{one}</g><g transform="scale(1 -1)"><g transform="rotate({-a} 4.6 -6.6)">{one}</g></g>'
-                f'<path d="M-2 -5.6C-4 -8.4 -6.4 -8.8 -7.4 -7.6C-5.8 -6.6 -4.4 -5.8 -2 -5.6ZM-2 5.6C-4 8.4 -6.4 8.8 -7.4 7.6C-5.8 6.6 -4.4 5.8 -2 5.6Z" fill="{mid}" fill-opacity="0.5" />')
-    scales = "".join(f"M{x - 1.3:.1f} {y:.1f}a1.4 1.4 0 0 0 2.6 0" for y in (-3.4, -1.1, 1.2, 3.5) for x in (-5.4, -2.8, -0.2, 2.4) if abs(y) < 4 - abs(x) * 0.05)
-    body = (f'<path d="{body_d}" fill="url(#gfBody{mode})" stroke="{edge}" stroke-width="0.6" />'
-            f'<path d="M14 0C14 -3.2 12.4 -5.2 9.6 -5.8C8 -3.6 7.8 -1 8.6 0.4C9.4 2.4 11.4 3.6 13.4 2.6C13.8 1.8 14 0.9 14 0Z" fill="{white}" fill-opacity="0.92" />'
-            f'<path d="M-2.6 -6.8C-5 -5.6 -7 -3.6 -8.2 -1.6C-6 -2.4 -3.4 -2.6 -1.4 -4.2C-0.8 -5 -1.4 -6.2 -2.6 -6.8Z" fill="{white}" fill-opacity="0.88" />'
-            f'<path d="{scales}" fill="none" stroke="{scale}" stroke-width="0.4" stroke-opacity="0.55" />'
-            f'<path d="M7 0C3 -0.9 -2 0.9 -8.4 0" fill="none" stroke="{dark}" stroke-width="1.1" stroke-opacity="0.55" stroke-linecap="round" />'
-            f'<path d="M6.6 -5.8Q5.4 0 6.6 5.8" fill="none" stroke="{dark}" stroke-width="0.5" stroke-opacity="0.45" />'
-            f'<ellipse cx="2" cy="-3" rx="5.4" ry="1.2" fill="#ffffff" fill-opacity="0.3" transform="rotate(-6 2 -3)" />'
-            + "".join(f'<circle cx="9.2" cy="{sy * 5.9}" r="2.3" fill="#17171b" stroke="{core}" stroke-width="0.6" />'
-                      f'<circle cx="9.9" cy="{sy * 6.4}" r="0.75" fill="#ffffff" />' for sy in (-1, 1)))
+        one = (f'<path d="{pfin}" fill="{mid}" fill-opacity="0.45" stroke="{edge}" stroke-width="0.35" stroke-opacity="0.6" />'
+               f'<path d="{pray}" stroke="{white}" stroke-width="0.3" stroke-opacity="0.55" />')
+        pelvic = "M-1.6 -5.8C-3.4 -9 -6.2 -9.8 -7.6 -8.6C-6 -7.4 -4.2 -6.2 -1.6 -5.8Z"
+        return (f'<g transform="rotate({a} 5.4 -6.8)">{one}</g><g transform="scale(1 -1)"><g transform="rotate({-a} 5.4 -6.8)">{one}</g></g>'
+                f'<path d="{pelvic}" fill="{mid}" fill-opacity="0.45" /><path d="{pelvic}" transform="scale(1 -1)" fill="{mid}" fill-opacity="0.45" />')
+    scales = "".join(f"M{x - 1.1:.1f} {y:.1f}a1.2 1.2 0 0 0 2.2 0" for y in (-3.8, -1.6, 0.6, 2.8) for x in (-5.6, -3.4, -1.2, 1.0, 3.2) if abs(y + 0.5) < 4.6 - abs(x) * 0.12)
+    body = (f'<path d="M7.4 0C3.6 -1.6 -2 -1.7 -7.2 -0.4C-2 0.6 3.6 0.9 7.4 0Z" fill="{edge}" fill-opacity="0.45" />'  # 背鳍（从上看是一道窄窄的半透明脊）
+            f'<path d="{body_d}" fill="url(#gfBody{mode})" stroke="{edge}" stroke-width="0.55" />'
+            f'<path d="M15 0C15 -3.4 13.2 -5.6 10 -6.2C8.2 -3.8 7.9 -1 8.8 0.6C9.8 2.6 12 3.8 14.2 2.8C14.7 1.9 15 0.9 15 0Z" fill="{white}" fill-opacity="0.94" />'
+            f'<path d="M-1.2 -7.5C-4 -6.4 -6.4 -4.2 -7.8 -2.2C-5.4 -2.8 -2.6 -2.8 -0.4 -4.6C0.4 -5.6 -0.2 -6.9 -1.2 -7.5Z" fill="{white}" fill-opacity="0.9" />'
+            f'<path d="M2.6 6.6C1.4 5.2 1.6 3.6 3 3.2C4.8 3.6 5.6 5.4 5 7.2C4.2 7.4 3.4 7.2 2.6 6.6Z" fill="{white}" fill-opacity="0.7" />'
+            f'<path d="{scales}" fill="none" stroke="{scale}" stroke-width="0.35" stroke-opacity="0.6" />'
+            f'<path d="M7.2 0C3.4 -0.8 -2 0.8 -8 0" fill="none" stroke="{dark}" stroke-width="0.9" stroke-opacity="0.5" stroke-linecap="round" />'
+            f'<path d="M7 -6Q5.8 0 7 6" fill="none" stroke="{dark}" stroke-width="0.45" stroke-opacity="0.45" />'
+            f'<ellipse cx="2.6" cy="-3.2" rx="5.6" ry="1.1" fill="#ffffff" fill-opacity="0.32" transform="rotate(-6 2.6 -3.2)" />'
+            + "".join(f'<circle cx="10" cy="{sy * 6.1}" r="2.5" fill="{iris}" stroke="{edge}" stroke-width="0.4" />'
+                      f'<circle cx="10.3" cy="{sy * 6.2}" r="1.6" fill="#141418" />'
+                      f'<circle cx="10.8" cy="{sy * 6.7}" r="0.6" fill="#ffffff" />' for sy in (-1, 1))
+            + f'<path d="M14.6 -1.1Q15.6 0 14.6 1.1" fill="none" stroke="{dark}" stroke-width="0.5" stroke-opacity="0.6" stroke-linecap="round" />')
     shadow = f'<path d="{body_d}" /><path d="{lobe}" /><path d="{lobe}" transform="scale(1 -1)" />'
     return defs, body, tail, fins, shadow
 
 
-def ripple_frames(cells, centers, period, speed=230.0, tick=0.1, trail=(0, 30, 60)):
-    """水面的光：从几个点各荡开一圈波，经过的地方，淡点变浓变大、墨点外面亮起一圈细环，像水波在点阵上闪过去。
-    返回 <set> 翻页的 svg（一个主时钟，每格两条路径），全部是墨色，深色版自动反相。"""
-    def dot(x, y, r):
-        return f"M{x - r:.1f} {y:.1f}a{r} {r} 0 1 0 {2 * r} 0a{r} {r} 0 1 0 {-2 * r} 0z"
-
-    def ring(x, y, r):
-        return f"M{x - r:.1f} {y:.1f}a{r} {r} 0 1 0 {2 * r} 0a{r} {r} 0 1 0 {-2 * r} 0"
-    out = [clock("wv", period)]
-    for t0, (ox, oy) in centers:
-        reach = max(math.hypot(x - ox, y - oy) for x, y, _ in cells) + 20
-        k = 0
-        while k * tick * speed < reach + trail[-1]:
-            R0 = k * tick * speed
-            strong_f, soft_f, rings = [], [], []
-            for x, y, lv in cells:
-                dist = math.hypot(x - ox, y - oy)
-                dd = min(abs(dist - (R0 - o)) for o in trail)  # 一圈主波，后面跟着两圈余波
-                if dd > 10:
-                    continue
-                if lv:
-                    rings.append(ring(x, y, LEVEL_R[min(lv, 4)] + (2.4 if dd < 6 else 3.6)))
-                elif dd < 6:
-                    strong_f.append(dot(x, y, 1.7))
-                else:
-                    soft_f.append(dot(x, y, 1.35))
-            fade = max(0.3, 1 - R0 / (reach + trail[-1]))
-            svg = ""
-            if strong_f:
-                svg += f'<path d="{"".join(strong_f)}" fill="{INK}" fill-opacity="{0.7 * fade + 0.15:.2f}" />'
-            if soft_f:
-                svg += f'<path d="{"".join(soft_f)}" fill="{INK}" fill-opacity="{0.45 * fade + 0.1:.2f}" />'
-            if rings:
-                svg += f'<path d="{"".join(rings)}" fill="none" stroke="{INK}" stroke-width="0.7" stroke-opacity="{0.55 * fade + 0.1:.2f}" />'
-            if svg:
-                out.append(cel("wv", [(t0 + k * tick, tick)], svg))
-            k += 1
+def raindrops(cells, period=8.0, tick=0.04, seed=11):
+    """雨点打在水面：每粒有贡献的墨点每个周期被一滴雨打中一次（时刻随机、对齐到金鱼的 0.04 秒一格），
+    外面依次荡开两圈细环，越来越大、越来越淡。每滴雨就是两只 <circle>，用 <set> 改半径和透明度。"""
+    rng = random.Random(seed)
+    out = [clock("rn", period)]
+    stages = [(0.0, 1.8, 0.85), (0.12, 4.6, 0.55), (0.24, 7.6, 0.32), (0.36, 10.6, 0.14)]
+    for x, y, lv in cells:
+        if not lv:
+            continue
+        t = round(rng.uniform(0, period - 0.6) / tick) * tick
+        r0 = LEVEL_R[min(lv, 4)]
+        for lag in (0.0, 0.12):  # 第二圈晚一格出来
+            rs = ";".join(f"{r0 + dr:.1f}" for _, dr, _ in stages)
+            ops = ";".join(f"{op * (0.7 if lag else 1):.2f}" for _, _, op in stages)
+            b = f"rn.begin+{t + lag:.2f}s"
+            out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="0" fill="none" stroke="{INK}" stroke-width="0.75">'
+                       f'<animate attributeName="r" values="{rs}" calcMode="discrete" begin="{b}" dur="0.48s" />'
+                       f'<animate attributeName="stroke-opacity" values="{ops}" calcMode="discrete" begin="{b}" dur="0.48s" /></circle>')
     return "".join(out)
 
 
@@ -873,7 +917,7 @@ def snake():
         return f"{ahead:.1f} {T - L:.1f} {L - ahead:.1f} 0"
     art.defs.append(f'<path id="route" d="{d}" />')
     regrow = 7.0 * SNAKE_SPEED
-    cover = "".join(f'<use href="#route" stroke-width="12.5" stroke-dasharray="{window(regrow + SNAKE_P * j, 13)}" stroke-opacity="{op}" />'
+    cover = "".join(f'<use href="#route" stroke-width="12.5" stroke-dasharray="{window(regrow + SNAKE_P * j, 14)}" stroke-opacity="{op}" />'
                     for j, op in ((4, 0.2), (3, 0.4), (2, 0.6), (1, 0.8), (0, 1)))
 
     # 水纹：每粒墨点第一次被鱼经过的时刻
@@ -893,13 +937,11 @@ def snake():
                 break
         else:
             continue
-        t_eat = (s_hit - 13) / SNAKE_SPEED % C
-        ripples.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="5" fill="none" stroke="{INK}" stroke-width="0.9" stroke-opacity="0.6" visibility="hidden">'
-                       f'<set attributeName="visibility" to="visible" begin="rp.begin+{t_eat:.2f}s" dur="0.42s" />'
-                       f'<set attributeName="r" to="9" begin="rp.begin+{t_eat + 0.14:.2f}s" dur="0.14s" />'
-                       f'<set attributeName="r" to="13" begin="rp.begin+{t_eat + 0.28:.2f}s" dur="0.14s" />'
-                       f'<set attributeName="stroke-opacity" to="0.35" begin="rp.begin+{t_eat + 0.14:.2f}s" dur="0.14s" />'
-                       f'<set attributeName="stroke-opacity" to="0.15" begin="rp.begin+{t_eat + 0.28:.2f}s" dur="0.14s" /></circle>')
+        t_eat = (s_hit - 14) / SNAKE_SPEED % C
+        b = f"rp.begin+{t_eat:.2f}s"
+        ripples.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="0" fill="none" stroke="{INK}" stroke-width="0.9">'
+                       f'<animate attributeName="r" values="5;9;13" calcMode="discrete" begin="{b}" dur="0.42s" />'
+                       f'<animate attributeName="stroke-opacity" values="0.6;0.35;0.15" calcMode="discrete" begin="{b}" dur="0.42s" /></circle>')
 
     art.css.append(base_css([bold, reg, jp], f"""  .m {{ font-size: 9.5px; }}
   .go {{ fill: none; stroke-linejoin: round; animation: go {C:.2f}s steps({steps}) infinite; }}
@@ -918,15 +960,15 @@ def snake():
             f'<text class="m" x="{legend_x[-1] + 12:.1f}" y="{fy}">多</text>'
             f'<text class="s" x="{PAD}" y="{fy}">{foot_txt}</text>'
             + clock("rp", C) + "".join(ripples)
-            + ripple_frames(cells, [(0.6, (gx + 12 * SNAKE_P, gy + 2 * SNAKE_P)), (6.6, (gx + 40 * SNAKE_P, gy + 5 * SNAKE_P))], 12.0))
+            + raindrops(cells))
 
     def fish(mode):
         defs, body, tail, fins, shadow = goldfish_parts(mode)
         shade, op = ("#15171d", 0.1) if mode == "light" else ("#000000", 0.32)
-        tl = 0.09
+        tl = 0.08
         anim = clock("tl", tl * len(TAIL_POSES)) + poster(tail(0) + fins(0)) + "".join(
             cel("tl", [(tl * i, tl)], tail(a) + fins(-a * 0.8)) for i, a in enumerate(TAIL_POSES))
-        return (f'<defs>{defs}</defs><g class="fish"><g transform="scale(0.95)">'
+        return (f'<defs>{defs}</defs><g class="fish"><g transform="scale(0.92)">'
                 f'<g fill="{shade}" fill-opacity="{op}" transform="translate(4 5)">{shadow}</g>'
                 f'<g fill="{shade}" fill-opacity="{op * 0.6:.2f}" transform="translate(5.5 6.5) scale(1.04)">{shadow}</g>'
                 f'{anim}{body}</g></g>')
