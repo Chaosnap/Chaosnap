@@ -229,45 +229,64 @@ def langs_data():
     return (head, items) if items else None
 
 
-def stats_card(st, lg):
-    """左栏：几项数字 + 等级表盘；右栏：语言比例条 + 两列图例。中间一道发丝竖线。"""
-    head, rows, rank, prog = st or ("GitHub Stats", [], "", 0.0)
-    lhead, items = lg or ("Most Used Languages", [])
-    W = W_FULL
-    lrows = (len(items) + 1) // 2
-    top = RULE_Y + 12
-    H = max(236, top + 30 * max(0, len(rows) - 1) + 52, top + 44 + 26 * max(0, lrows - 1) + 52)
-    mid_y = (top + H - 24) / 2  # 内容区的垂直中线
+def count_up(x, y, value, cls, anchor="end", dur=1.1, n=11, delay=0.2):
+    """数字从 0 数到 value：只在图片刚载入时跑一遍（十一格），之后就是一张静态图；不跑动画的环境直接显示最终值。"""
+    attrs = f'class="{cls}" x="{x}" y="{y}" text-anchor="{anchor}"'
+    if not re.fullmatch(r"\d[\d,]*", value):
+        return f'<text {attrs}>{escape(value)}</text>'
+    v = int(value.replace(",", ""))
+    step = dur / n
+    out = []
+    for i in range(n):
+        u = 1 - (1 - i / n) ** 3
+        at, d = (0.0, delay + step) if i == 0 else (delay + i * step, step)
+        out.append(f'<text {attrs} visibility="hidden">{round(v * u):,}<set attributeName="visibility" to="visible" begin="{at:.2f}s" dur="{d:.2f}s" /></text>')
+    out.append(f'<text {attrs}>{escape(value)}<set attributeName="visibility" to="hidden" begin="0s" dur="{delay + dur:.2f}s" /></text>')
+    return "".join(out)
 
-    bold = load_font(SERIF, 700, head + lhead + "".join(v for _, v, _ in rows) + rank + "".join(p for _, p, _ in items) + "0123456789,.%")
-    reg = load_font(SERIF, 400, "".join(lb for lb, _, _ in rows) + "".join(nm for nm, _, _ in items) + "RANK")
-    jp = load_font(MINCHO, 800, "能力値言語力")
-    label = (f"{head}: " + ", ".join(f"{lb} {v}" for lb, v, _ in rows) + (f", rank {rank}" if rank else "")
-             + f". {lhead}: " + ", ".join(f"{nm} {p}" for nm, p, _ in items))
-    art = sheet(W, H, label)
+
+INTRO_CSS = """  .draw { stroke-dasharray: 1 1; animation: draw 1.6s 0.2s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+  @keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  .fade { animation: fade 1.2s 0.5s ease-out backwards; }
+  @keyframes fade { from { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .draw, .fade, .grow { animation: none; } }
+"""
+
+# 统计卡和语言卡并排：宽度比 595 : 395 正好等于 README 里的 59.5% : 39.5%，同一个高度，渲染出来上下边都对齐
+STATS_W, LANGS_W = 595, 395
+
+
+def stats_height(st, lg):
+    rows = len(st[1]) if st else 0
+    lrows = (len(lg[1]) + 1) // 2 if lg else 0
+    return max(232, RULE_Y + 12 + 30 * max(0, rows - 1) + 52, RULE_Y + 12 + 38 + 26 * max(0, lrows - 1) + 52)
+
+
+def stats(data, H):
+    """能力値：几项数字（载入时从 0 数上来）+ 等级表盘（弧线画出来）；之后每 2.4 秒有一行的点线染成朱色，等级弧尽头隔几秒荡开一圈水波。"""
+    head, rows, rank, prog = data
+    W = STATS_W
+    bold = load_font(SERIF, 700, head + "".join(v for _, v, _ in rows) + rank + "0123456789,.")
+    reg = load_font(SERIF, 400, "".join(lb for lb, _, _ in rows) + "RANK")
+    jp = load_font(MINCHO, 800, "能力値力")
+    art = sheet(W, H, f"{head}: " + ", ".join(f"{lb} {v}" for lb, v, _ in rows) + (f", rank {rank}" if rank else ""))
     art.css.append(base_css([bold, reg, jp], f"""  .rank {{ font: 700 32px {SERIF_STACK}; fill: {INK}; }}
   .rk {{ font: 400 7.5px {SERIF_STACK}; fill: {GRAY}; letter-spacing: 2.6px; }}
-  .pct {{ font: 700 12px {SERIF_STACK}; fill: {INK}; }}
-"""))
-    LX0, LX1 = PAD, 494          # 左栏
-    RX0, RX1 = 546, W - PAD      # 右栏
-    body = [card(W, H),
-            heading(LX0, HEAD_Y, head, "能力値", bold), rule(LX0, LX1, RULE_Y),
-            heading(RX0, HEAD_Y, lhead, "言語", bold), rule(RX0, RX1, RULE_Y),
-            f'<rect x="{(LX1 + RX0) / 2 - 0.35:.2f}" y="30" width="0.7" height="{H - 60}" fill="{INK}" fill-opacity="0.16" />']
-
-    # ---- 左栏：数字 ----
-    XV = 318
+""" + INTRO_CSS))
+    X0, XV = PAD, 352
+    mid_y = (RULE_Y + 12 + H - 24) / 2
+    body = [card(W, H), heading(X0, HEAD_Y, head, "能力値", bold), rule(X0, W - PAD, RULE_Y)]
     y0 = mid_y - 30 * (len(rows) - 1) / 2 + 4.5
+    lead = []
     for k, (lb, value, d) in enumerate(rows):
         y = round(y0 + k * 30)
         lw = reg.width(lb, 13) if reg else 7 * len(lb)
-        body.append((icon(d, LX0, y - 12, 0.85, 0.7) if d else "")
-                    + f'<text class="l" x="{LX0 + 25}" y="{y}">{escape(lb)}</text>'
-                    + leaders(LX0 + 25 + lw + 10, XV - 36, y - 1)
-                    + f'<text class="v" x="{XV}" y="{y}" text-anchor="end">{escape(value)}</text>')
-    # 等级表盘：一圈细刻度、底环、进度弧、等级字母
-    cx, cy, r = 418, round(mid_y, 1), 38
+        lead.append((X0 + 25 + lw + 10, XV - 38, y - 1))
+        body.append((icon(d, X0, y - 12, 0.85, 0.7) if d else "")
+                    + f'<text class="l" x="{X0 + 25}" y="{y}">{escape(lb)}</text>'
+                    + leaders(*lead[-1])
+                    + count_up(XV, y, value, "v"))
+    cx, cy, r = W - PAD - 64, round(mid_y, 1), 40
     ticks = []
     for i in range(60):
         a = 2 * math.pi * i / 60
@@ -275,54 +294,72 @@ def stats_card(st, lg):
         ticks.append(f"M{cx + r0 * math.cos(a):.1f} {cy + r0 * math.sin(a):.1f}L{cx + r1 * math.cos(a):.1f} {cy + r1 * math.sin(a):.1f}")
     body.append(f'<path d="{"".join(ticks)}" stroke="{INK}" stroke-width="0.7" stroke-opacity="0.32" fill="none" />'
                 f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="{INK}" stroke-width="1" stroke-opacity="0.18" />'
-                f'<path d="{arc(cx, cy, r, prog)}" fill="none" stroke="{INK}" stroke-width="2.6" stroke-linecap="round" />'
+                f'<path class="draw" pathLength="1" d="{arc(cx, cy, r, prog)}" fill="none" stroke="{INK}" stroke-width="2.6" stroke-linecap="round" />'
                 f'<text class="rank" x="{cx}" y="{cy + 8:.1f}" text-anchor="middle">{escape(rank)}</text>'
                 f'<text class="rk" x="{cx + 1.3}" y="{cy + 22:.1f}" text-anchor="middle">RANK</text>')
-
-    # ---- 右栏：语言 ----
-    n = len(items)
-    BH = 8
-    BY = round(mid_y - (BH + 30 + 26 * max(0, lrows - 1)) / 2 + 2)
-    total = sum(w for _, _, w in items) or 1
-    art.defs.append(f'<clipPath id="bar"><rect x="{RX0}" y="{BY}" width="{RX1 - RX0}" height="{BH}" rx="{BH / 2}" /></clipPath>')
-    segs, mids, x = [], [], RX0
-    for k, (_, _, w) in enumerate(items):
-        sw = (RX1 - RX0) * w / total
-        segs.append(f'<rect x="{x + (0 if k == 0 else 1):.1f}" y="{BY}" width="{max(0, sw - (1 if k else 0) - (1 if k < n - 1 else 0)):.1f}" height="{BH}" fill="{FILLS[k % len(FILLS)]}" />')
-        mids.append(x + sw / 2)
-        x += sw
-    body.append(f'<g clip-path="url(#bar)">{"".join(segs)}</g>'
-                f'<rect x="{RX0}" y="{BY}" width="{RX1 - RX0}" height="{BH}" rx="{BH / 2}" fill="none" stroke="{INK}" stroke-width="0.8" stroke-opacity="0.8" />')
-    col_w = (RX1 - RX0 - 24) / 2
-    spots = []
-    for k, (name, pct, _) in enumerate(items):
-        col, row = k // lrows, k % lrows
-        x, y = RX0 + col * (col_w + 24), BY + BH + 30 + row * 26
-        spots.append((x, y))
-        body.append(f'<rect x="{x:.1f}" y="{y - 8.5}" width="8.5" height="8.5" rx="1.5" fill="{FILLS[k % len(FILLS)]}" stroke="{INK}" stroke-width="0.7" />'
-                    f'<text class="d" x="{x + 15:.1f}" y="{y}">{escape(name)}</text>'
-                    f'<text class="pct" x="{x + col_w:.1f}" y="{y}" text-anchor="end">{escape(pct)}</text>')
     art.ink("".join(body))
-
-    # 等级弧的尽头一颗朱点，每隔几秒荡开一圈水波（四格）
+    # 朱色依次走过每一行的点线
+    n = len(rows)
+    walk = clock("r", 2.4 * n) + "".join(cel("r", [(2.4 * k + 1.6, 2.4)], leaders(*lead[k]).replace(f'stroke="{INK}"', f'stroke="{RED}"').replace('stroke-opacity="0.3"', 'stroke-opacity="0.9"'))
+                                          for k in range(n))
     a = -math.pi / 2 + 2 * math.pi * prog
     dx, dy = cx + r * math.cos(a), cy + r * math.sin(a)
     ripple = clock("k", 4.8) + "".join(
-        cel("k", [(0.6 + i * 0.12, 0.12)], f'<circle cx="{dx:.1f}" cy="{dy:.1f}" r="{rr}" fill="none" stroke="{RED}" stroke-width="{sw}" stroke-opacity="{op}" />')
+        cel("k", [(2.0 + i * 0.12, 0.12)], f'<circle cx="{dx:.1f}" cy="{dy:.1f}" r="{rr}" fill="none" stroke="{RED}" stroke-width="{sw}" stroke-opacity="{op}" />')
         for i, (rr, sw, op) in enumerate([(6, 1.4, 0.8), (9, 1.1, 0.55), (12, 0.9, 0.32), (15, 0.7, 0.15)]))
-    art.color(*both(ripple + f'<circle cx="{dx:.1f}" cy="{dy:.1f}" r="3.6" fill="{RED}" />'))
-
-    # 一枚朱色的小三角每两秒移到下一种语言：指着条上对应的一段，图例那一行下面同时划一道细线
-    if n:
-        def mark(k):
-            mx, (lx, ly) = mids[k], spots[k]
-            return (f'<path d="M{mx - 4:.1f} {BY + BH + 9.5}L{mx:.1f} {BY + BH + 3}L{mx + 4:.1f} {BY + BH + 9.5}Z" fill="{RED}" />'
-                    f'<rect x="{lx:.1f}" y="{ly + 5}" width="{col_w:.1f}" height="1.2" fill="{RED}" />')
-        hop = clock("j", 2.4 * n) + poster(mark(0)) + "".join(cel("j", [(2.4 * k, 2.4)], mark(k)) for k in range(n))
-        art.color(*both(hop))
-    art.color(*seal(RX1, HEAD_Y - 18, "力"))
+    art.color(*both(walk + ripple + f'<circle class="fade" cx="{dx:.1f}" cy="{dy:.1f}" r="3.6" fill="{RED}" style="animation-delay:1.5s;animation-duration:0.4s" />'))
+    art.color(*seal(W - PAD, HEAD_Y - 18, "力"))
     art.write(PROFILE, "stats")
-    print("wrote stats light/dark (stats + languages)")
+    print("wrote stats light/dark")
+
+
+def top_langs(data, H):
+    """言語：比例条（载入时从左往右长出来）+ 两列图例；一枚朱色小三角每 2.4 秒移到下一种语言。"""
+    head, items = data
+    W, P = LANGS_W, 28
+    n = len(items)
+    lrows = (n + 1) // 2
+    bold = load_font(SERIF, 700, head + "".join(p for _, p, _ in items) + "0123456789.%")
+    reg = load_font(SERIF, 400, "".join(nm for nm, _, _ in items))
+    jp = load_font(MINCHO, 800, "言語")
+    art = sheet(W, H, f"{head}: " + ", ".join(f"{nm} {p}" for nm, p, _ in items))
+    X0, X1, BH = P, W - P, 8
+    mid_y = (RULE_Y + 12 + H - 24) / 2
+    BY = round(mid_y - (BH + 30 + 26 * max(0, lrows - 1)) / 2 + 2)
+    art.css.append(base_css([bold, reg, jp], f"  .pct {{ font: 700 12px {SERIF_STACK}; fill: {INK}; }}\n"
+                            f"  .grow {{ transform-origin: {X0}px 0; animation: grow 1.3s 0.2s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }}\n"
+                            "  @keyframes grow { from { transform: scaleX(0.002); } }\n" + INTRO_CSS))
+    total = sum(w for _, _, w in items) or 1
+    art.defs.append(f'<clipPath id="bar"><rect x="{X0}" y="{BY}" width="{X1 - X0}" height="{BH}" rx="{BH / 2}" /></clipPath>')
+    segs, mids, x = [], [], X0
+    for k, (_, _, w) in enumerate(items):
+        sw = (X1 - X0) * w / total
+        segs.append(f'<rect x="{x + (0 if k == 0 else 1):.1f}" y="{BY}" width="{max(0, sw - (1 if k else 0) - (1 if k < n - 1 else 0)):.1f}" height="{BH}" fill="{FILLS[k % len(FILLS)]}" />')
+        mids.append(x + sw / 2)
+        x += sw
+    body = [card(W, H), heading(X0, HEAD_Y, head, "言語", bold), rule(X0, X1, RULE_Y),
+            f'<g clip-path="url(#bar)"><g class="grow">{"".join(segs)}</g></g>'
+            f'<rect x="{X0}" y="{BY}" width="{X1 - X0}" height="{BH}" rx="{BH / 2}" fill="none" stroke="{INK}" stroke-width="0.8" stroke-opacity="0.8" />']
+    col_w = (X1 - X0 - 20) / 2
+    spots = []
+    for k, (name, pct, _) in enumerate(items):
+        col, row = k // lrows, k % lrows
+        x, y = X0 + col * (col_w + 20), BY + BH + 30 + row * 26
+        spots.append((x, y))
+        body.append(f'<g class="fade" style="animation-delay:{0.5 + 0.08 * k:.2f}s"><rect x="{x:.1f}" y="{y - 8.5}" width="8.5" height="8.5" rx="1.5" fill="{FILLS[k % len(FILLS)]}" stroke="{INK}" stroke-width="0.7" />'
+                    f'<text class="d" x="{x + 15:.1f}" y="{y}">{escape(name)}</text>'
+                    f'<text class="pct" x="{x + col_w:.1f}" y="{y}" text-anchor="end">{escape(pct)}</text></g>')
+    art.ink("".join(body))
+
+    def mark(k):
+        mx, (lx, ly) = mids[k], spots[k]
+        return (f'<path d="M{mx - 4:.1f} {BY + BH + 9.5}L{mx:.1f} {BY + BH + 3}L{mx + 4:.1f} {BY + BH + 9.5}Z" fill="{RED}" />'
+                f'<rect x="{lx:.1f}" y="{ly + 5}" width="{col_w:.1f}" height="1.2" fill="{RED}" />')
+    hop = clock("j", 2.4 * n) + poster(mark(0)) + "".join(cel("j", [(2.4 * k, 2.4)], mark(k)) for k in range(n))
+    art.color(*both(hop))
+    art.color(*seal(X1, HEAD_Y - 18, "語"))
+    art.write(PROFILE, "top-langs")
+    print("wrote top-langs light/dark")
 
 
 # ---------------------------------------------------------------- 置顶仓库卡
@@ -376,7 +413,30 @@ def pin(name, index=1, count=1):
 
 
 # ---------------------------------------------------------------- 活动折线图
+def monotone(pts):
+    """单调三次插值（Fritsch–Carlson）：曲线经过每个点，但不会在两点之间冲过头（不会跌到 0 以下）。"""
+    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+    n = len(pts)
+    d = [(ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]) for i in range(n - 1)]
+    m = [d[0]] + [(d[i - 1] + d[i]) / 2 if d[i - 1] * d[i] > 0 else 0.0 for i in range(1, n - 1)] + [d[-1]]
+    for i in range(n - 1):
+        if d[i] == 0:
+            m[i] = m[i + 1] = 0.0
+            continue
+        a, b = m[i] / d[i], m[i + 1] / d[i]
+        if a * a + b * b > 9:
+            t = 3 / math.sqrt(a * a + b * b)
+            m[i], m[i + 1] = t * a * d[i], t * b * d[i]
+    out = f"M{xs[0]:.1f} {ys[0]:.1f}"
+    for i in range(n - 1):
+        h = (xs[i + 1] - xs[i]) / 3
+        out += f"C{xs[i] + h:.1f} {ys[i] + m[i] * h:.1f} {xs[i + 1] - h:.1f} {ys[i + 1] - m[i + 1] * h:.1f} {xs[i + 1]:.1f} {ys[i + 1]:.1f}"
+    return out
+
+
 def activity():
+    """活動記録：柔和的面积曲线（墨色渐变）、周末淡淡的竖带、只标最高的一天。
+    载入时曲线从左往右画出来；之后一根读数的游标一天一格地走，牌子上写着日期和数目。"""
     svg = read("activity")
     if not svg:
         return
@@ -395,66 +455,73 @@ def activity():
             if d.day == int(labels[-1]):
                 start = d - datetime.timedelta(days=n - 1)
                 break
-    months, dates = [], [None] * n
-    if start:
-        for i in range(n):
-            d = start + datetime.timedelta(days=i)
-            dates[i] = d
-            if d.day == 1 or (i == 0 and not any((start + datetime.timedelta(days=j)).day == 1 for j in range(1, 3))):
-                months.append((i, d.strftime("%b").upper()))
+    dates = [start + datetime.timedelta(days=i) for i in range(n)] if start else [None] * n
 
-    W, H = W_FULL, 330
+    W, H = W_FULL, 318
     head = "Activity"
-    caption = f"PAST {n} DAYS"
+    total, vmax = sum(values), max(values) or 1
+    summary = f"TOTAL {total:g}   ·   PEAK {vmax:g}   ·   AVG {total / n:.1f}"
     bold = load_font(SERIF, 700, head + "0123456789")
-    reg = load_font(SERIF, 400, caption + "0123456789" + "JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC")
-    jp = load_font(MINCHO, 800, "活動記録録")
-    art = sheet(W, H, f"Activity graph: contributions over the past {n} days")
-    art.css.append(base_css([bold, reg, jp], f"""  .peak {{ font: 700 11.5px {SERIF_STACK}; fill: {RED}; }}
-  .fv {{ font: 700 12px {SERIF_STACK}; fill: {PAPER}; }}
-  .fd {{ font: 400 9px {SERIF_STACK}; fill: {PAPER}; letter-spacing: 1.5px; fill-opacity: 0.8; }}
-"""))
+    reg = load_font(SERIF, 400, summary + "0123456789" + "JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC ")
+    jp = load_font(MINCHO, 800, "活動記録録" + "".join(MONTHS_JP))
+    art = sheet(W, H, f"Activity graph: {total:g} contributions over the past {n} days, peak {vmax:g}")
+    art.css.append(base_css([bold, reg, jp], f"""  .peak {{ font: 700 12px {SERIF_STACK}; fill: {RED}; }}
+  .fv {{ font: 700 11.5px {SERIF_STACK}; fill: {PAPER}; }}
+  .fd {{ font: 400 8.5px {SERIF_STACK}; fill: {PAPER}; letter-spacing: 1.4px; fill-opacity: 0.8; }}
+  .m {{ font-size: 9.5px; }}
+""" + INTRO_CSS))
     X0, X1 = PAD, W - PAD
-    px0, px1, py0, py1 = 72, W - 44, 108, 262
-    vmax = max(values) or 1
+    px0, px1, py0, py1 = 62, W - 44, 116, 250
     step = 5 if vmax <= 30 else (10 if vmax <= 80 else 20)
     ymax = max(step, math.ceil(vmax / step) * step)
     xs = [px0 + (px1 - px0) * i / (n - 1) for i in range(n)]
     ys = [py1 - (py1 - py0) * v / ymax for v in values]
-    line = smooth(list(zip(xs, ys)))
+    line = monotone(list(zip(xs, ys)))
+    dx = (px1 - px0) / (n - 1)
+    art.defs.append(f'<linearGradient id="actFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{INK}" stop-opacity="0.24" />'
+                    f'<stop offset="1" stop-color="{INK}" stop-opacity="0" /></linearGradient>')
     body = [card(W, H), heading(X0, HEAD_Y, head, "活動記録", bold),
-            f'<text class="s" x="{X1 - SEAL - 16}" y="{HEAD_Y - 1}" text-anchor="end">{caption}</text>', rule(X0, X1, RULE_Y)]
-    grid = []
-    for t in range(0, ymax + 1, step):
+            f'<text class="s" x="{X1 - SEAL - 16}" y="{HEAD_Y - 1}" text-anchor="end">{summary}</text>', rule(X0, X1, RULE_Y)]
+    # 周末：一道很淡的竖带
+    body.append("".join(f'<rect x="{max(px0, x - dx / 2):.1f}" y="{py0 - 8}" width="{min(px1, x + dx / 2) - max(px0, x - dx / 2):.1f}" height="{py1 - py0 + 8}" fill="{INK}" fill-opacity="0.025" />'
+                        for x, d in zip(xs, dates) if d and d.weekday() >= 5))
+    # 三道发丝横线：0、一半、最高
+    for t in (0, ymax // 2, ymax):
         y = py1 - (py1 - py0) * t / ymax
-        grid.append(f'<path d="M{px0} {y:.1f}H{px1}" stroke="{INK}" stroke-width="0.6" stroke-dasharray="1.5 3.5" stroke-opacity="{0.5 if t == 0 else 0.22}" />'
+        dash = "" if t == 0 else ' stroke-dasharray="1.5 3.5"'
+        body.append(f'<path d="M{px0} {y:.1f}H{px1}" stroke="{INK}" stroke-width="0.6" stroke-opacity="{0.45 if t == 0 else 0.16}"{dash} />'
                     f'<text class="ax" x="{px0 - 14}" y="{y + 3.5:.1f}" text-anchor="end">{t}</text>')
-    body.append("".join(grid))
-    body.append(f'<path d="{line}L{px1:.1f} {py1}L{px0:.1f} {py1}Z" fill="url(#toneFine)" fill-opacity="0.35" />'
-                f'<path d="{line}" fill="none" stroke="{INK}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />')
-    body.append("".join(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="2.4" fill="{PAPER}" stroke="{INK}" stroke-width="1" />' for x, y in zip(xs, ys)))
-    body.append("".join(f'<text class="ax" x="{x:.1f}" y="{py1 + 20}" text-anchor="middle">{escape(lb)}</text>' for x, lb in zip(xs, labels)))
-    body.append("".join(f'<text class="s" x="{xs[i]:.1f}" y="{py1 + 40}" text-anchor="{"start" if i == 0 else "middle"}">{m}</text>' for i, m in months))
+    body.append(f'<path class="fade" d="{line}L{px1:.1f} {py1}L{px0:.1f} {py1}Z" fill="url(#actFill)" />'
+                f'<path class="draw" pathLength="1" d="{line}" fill="none" stroke="{INK}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" />')
+    dots = "".join(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="1.9" fill="{INK}" />' for x, y, v in zip(xs, ys, values) if v)
+    body.append(f'<g class="fade">{dots}</g>')
+    # 日期：隔两天标一个（最后一天一定标），月份用汉字写在下面
+    body.append("".join(f'<text class="ax" x="{x:.1f}" y="{py1 + 20}" text-anchor="middle">{escape(lb)}</text>'
+                        for i, (x, lb) in enumerate(zip(xs, labels)) if (n - 1 - i) % 3 == 0))
+    for i, d in enumerate(dates):
+        if d and (d.day == 1 or i == 0):
+            body.append(f'<text class="m" x="{xs[i] - (0 if i else 4):.1f}" y="{py1 + 40}" text-anchor="{"start" if i == 0 else "middle"}">{MONTHS_JP[d.month - 1]}</text>')
     art.ink("".join(body))
     k = values.index(vmax)
-    peak = (f'<circle cx="{xs[k]:.1f}" cy="{ys[k]:.1f}" r="4" fill="{RED}" />'
-            f'<text class="peak" x="{xs[k]:.1f}" y="{ys[k] - 11:.1f}" text-anchor="middle">{vmax:g}</text>')
-    art.color(*both(peak))
+    peak = (f'<circle cx="{xs[k]:.1f}" cy="{ys[k]:.1f}" r="7" fill="none" stroke="{RED}" stroke-width="0.8" stroke-opacity="0.6" />'
+            f'<circle cx="{xs[k]:.1f}" cy="{ys[k]:.1f}" r="3.6" fill="{RED}" />'
+            f'<text class="peak" x="{xs[k]:.1f}" y="{ys[k] - 14:.1f}" text-anchor="middle">{vmax:g}</text>')
+    art.color(*both(f'<g class="fade" style="animation-delay:1.4s">{peak}</g>'))
 
-    # 读数的游标：一天一格从左走到右，竖线套住当天的点，上方的小牌子写着日期和数目
-    FW, FH, fy = 74, 20, 74
+    # 读数的游标：一天一格从左走到右
+    FW, FH, fy = 84, 20, 76
+
     def cursor(i):
         x, y, v = xs[i], ys[i], values[i]
-        fx = min(max(x, px0 + FW / 2 - 12), px1 - FW / 2 + 12)
+        fx = min(max(x, px0 + FW / 2 - 10), px1 - FW / 2 + 10)
         date = dates[i].strftime("%b %-d").upper() if dates[i] else f"DAY {i + 1}"
-        return (f'<path d="M{x:.1f} {fy + FH}V{py1}" stroke="{INK}" stroke-width="0.8" stroke-dasharray="2 3" stroke-opacity="0.6" />'
-                f'<circle cx="{x:.1f}" cy="{y:.1f}" r="6.5" fill="none" stroke="{INK}" stroke-width="1.1" />'
-                f'<path d="M{x - 3.5:.1f} {fy + FH - 0.5}h7l-3.5 4.5z" fill="{INK}" />'
-                f'<rect x="{fx - FW / 2:.1f}" y="{fy}" width="{FW}" height="{FH}" rx="3" fill="{INK}" />'
-                f'<text class="fd" x="{fx - FW / 2 + 8:.1f}" y="{fy + 13.5}">{date}</text>'
-                f'<text class="fv" x="{fx + FW / 2 - 8:.1f}" y="{fy + 14.5}" text-anchor="end">{v:g}</text>')
-    dwell = 0.96
-    scan = clock("k", dwell * n) + poster(cursor(n - 1)) + "".join(cel("k", [(dwell * i, dwell)], cursor(i)) for i in range(n))
+        return (f'<path d="M{x:.1f} {fy + FH + 4}V{py1}" stroke="{INK}" stroke-width="0.7" stroke-dasharray="1.5 2.5" stroke-opacity="0.55" />'
+                f'<circle cx="{x:.1f}" cy="{y:.1f}" r="5.5" fill="{PAPER}" stroke="{INK}" stroke-width="1.2" /><circle cx="{x:.1f}" cy="{y:.1f}" r="2" fill="{INK}" />'
+                f'<rect x="{fx - FW / 2:.1f}" y="{fy}" width="{FW}" height="{FH}" rx="10" fill="{INK}" />'
+                f'<text class="fd" x="{fx - FW / 2 + 11:.1f}" y="{fy + 13.3}">{date}</text>'
+                f'<text class="fv" x="{fx + FW / 2 - 11:.1f}" y="{fy + 14.2}" text-anchor="end">{v:g}</text>')
+    dwell = 1.2
+    scan = clock("c", dwell * n) + poster(cursor(k)) + "".join(cel("c", [(dwell * i, dwell)], cursor(i)) for i in range(n))
     art.ink(scan)
     art.color(*seal(X1, HEAD_Y - 18, "録"))
     art.write(PROFILE, "activity")
@@ -590,7 +657,7 @@ def trophy():
 
 # ---------------------------------------------------------------- 贪吃蛇：一筆書き
 SNAKE_P = 15.0                          # 格距（snk 原图是 16）
-SNAKE_TICK, SNAKE_SPEED = 0.05, 46.0    # 一格 0.05 秒（20 格/秒）；每秒走 46 像素，约三格
+SNAKE_TICK, SNAKE_SPEED = 0.04, 44.0    # 一格 0.04 秒（25 格/秒）；每秒游 44 像素，约三格
 LEVEL_R = [1.0, 2.0, 2.9, 3.8, 4.7]     # 没有贡献的日子是一粒很淡的小点，其余按多少点大小不同的墨点
 MONTHS_JP = ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"]
 
@@ -649,18 +716,37 @@ def snake_route(route, ox, oy, radius=7.0):
     for p, q in zip(pts, pts[1:]):
         dx, dy = round(q[0] - p[0], 1), round(q[1] - p[1], 1)
         d += (f"h{num(dx)}" if dy == 0 else f"v{num(dy)}" if dx == 0 else f"l{num(dx)} {num(dy)}")
-    return d + ("z" if closed else ""), total, closed
+    return d + ("z" if closed else ""), total, closed, pts
+
+
+TAIL_POSES = [-16, -7, 5, 15, 5, -7]  # 尾鳍左右摆的角度，0.1 秒一格
+
+
+def goldfish_parts(red, edge):
+    """一条从上往下看的金鱼（头朝 +x，身体中心在原点）：身体、两只眼睛、胸鳍、背上的高光，尾鳍单独给（要摆）。"""
+    body = "M13 0C13 -4 10 -6.8 4.5 -7C-1 -7.2 -5 -4.4 -8.5 -1.8C-9.5 -1 -9.5 1 -8.5 1.8C-5 4.4 -1 7.2 4.5 7C10 6.8 13 4 13 0Z"
+    fin = "M3 -6.4C1 -11 -3 -12.6 -4.6 -11.2C-3 -9 -0.6 -7.4 3 -6.4Z"
+    tail_d = ("M-8.4 -1.4C-13 -5 -18 -12 -26 -12.6C-23 -7 -22.6 -3 -20 0C-22.6 3 -23 7 -26 12.6C-18 12 -13 5 -8.4 1.4Z")
+    rays = "M-9 0L-24 -10M-9 0L-22.5 -4M-9 0L-22.5 4M-9 0L-24 10"
+    front = (f'<path d="{fin}" fill="{red}" fill-opacity="0.6" /><path d="{fin}" transform="scale(1 -1)" fill="{red}" fill-opacity="0.6" />'
+             f'<path d="{body}" fill="{red}" stroke="{edge}" stroke-width="0.7" />'
+             f'<path d="M8 0H-6" stroke="{edge}" stroke-width="1.1" stroke-opacity="0.5" stroke-linecap="round" />'
+             f'<ellipse cx="2.5" cy="-2" rx="6" ry="1.5" fill="#ffffff" fill-opacity="0.38" />'
+             + "".join(f'<circle cx="9.4" cy="{sy * 5.7}" r="1.9" fill="#15171d" /><circle cx="9.9" cy="{sy * 5.9}" r="0.6" fill="#ffffff" />' for sy in (-1, 1)))
+
+    def tail(a):
+        return (f'<g transform="rotate({a} -8.5 0)"><path d="{tail_d}" fill="{red}" fill-opacity="0.62" stroke="{edge}" stroke-width="0.5" stroke-opacity="0.6" />'
+                f'<path d="{rays}" stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.4" /></g>')
+    shadow = f'<path d="{body}" transform="translate(3 4)" /><path d="{tail_d}" transform="translate(3 4)" />'
+    return front, tail, shadow
 
 
 def snake():
-    """一筆書き：一年的贡献是一片大小不一的墨点，一支笔从中穿过——笔尖一点朱，身后是由粗到细、渐渐收锋的墨迹。
-    笔走过的地方墨点被“吃掉”，留下一道空白，几秒后又一粒粒长回来。
-
-    整条笔画都是同一条路径（<use> 引用）上的“虚线窗口”：
-    - 笔尖：零长度的虚线 + 圆头线帽，就是一颗朱点；
-    - 笔身：九段由细到粗、由长到短的窗口叠在一起，于是从笔尖往后一点点收细，像毛笔的“払い”；
-    - 吃掉：一条纸色的宽窗口从笔尖往后盖住走过的格子，尾端分三层淡出。
-    所有窗口共用外层 <g> 上的一个 stroke-dashoffset 动画（steps）；墨点全是静态路径。"""
+    """金魚すくい：一年的贡献是一池大小不一的墨点，一条小金鱼沿着 snk 算好的路线游过去，把墨点一粒粒“吃掉”，
+    吃的地方荡开一圈水纹；吃掉的墨点只剩一粒淡点，七秒后再长回来。
+    - 金鱼用 CSS offset-path 沿路线游（steps，25 格/秒），尾鳍每 0.1 秒换一个摆角（<set> 翻页）；
+    - 吃掉：纸色的宽“虚线窗口”跟在鱼后面盖住墨点（和鱼同一个时长、同样的格数，所以对得齐）；
+    - 水纹：每粒墨点在鱼游到它的那一刻（按路线长度算好）荡开三圈，<set> 改半径。"""
     raw = PROFILE / "snake-raw.svg"
     if not raw.exists():
         return
@@ -668,21 +754,21 @@ def snake():
     W, H = W_FULL, 268
     k = SNAKE_P / 16
     cols = int(max(c[0] for c in cells) // 16) + 1
-    gx, gy = (W - (cols - 1) * SNAKE_P) / 2, 120  # 第一格的中心
+    gx, gy = (W - (cols - 1) * SNAKE_P) / 2, 120
 
     def at(x, y):
         return gx + (x - 8) * k, gy + (y - 8) * k
     cells = [(*at(x, y), lv) for x, y, lv in cells]
     route = [at(x, y) for x, y in route]
-    d, total, closed = snake_route(route, 0, 0, radius=6.0)
+    d, total, closed, pts = snake_route(route, 0, 0, radius=6.0)
     steps = round(total / SNAKE_SPEED / SNAKE_TICK)
     C = steps * SNAKE_TICK
-    head_txt, foot_txt = "Contribution Snake", "ONE YEAR  ·  ONE STROKE"
+    head_txt, foot_txt = "Contribution Pond", "ONE YEAR  ·  ONE LITTLE GOLDFISH"
     bold = load_font(SERIF, 700, head_txt)
     reg = load_font(SERIF, 400, foot_txt)
-    jp = load_font(MINCHO, 800, "一筆書き蛇少多月水金" + "".join(MONTHS_JP))
+    jp = load_font(MINCHO, 800, "金魚すくい魚少多月水金" + "".join(MONTHS_JP))
     active = sum(1 for c in cells if c[2])
-    art = sheet(W, H, f"Contribution snake: one stroke of ink through a year of contributions ({active} active days)")
+    art = sheet(W, H, f"Contribution pond: a little goldfish swims through a year of contributions ({active} active days)")
 
     # 月份（汉字）、星期（月 水 金）
     today = datetime.date.today()
@@ -690,7 +776,6 @@ def snake():
     for c in range(cols):
         day = today - datetime.timedelta(weeks=cols - 1 - c)
         x = gx + c * SNAKE_P - 3
-        # 月份换了才写；离上一个太近（开头那半个月）就让给下一个月
         if day.month != last and c < cols - 2:
             if x - last_x < 44 and months:
                 months.pop()
@@ -701,44 +786,58 @@ def snake():
 
     def dot(x, y, r):
         return f"M{x - r:.1f} {y:.1f}a{r} {r} 0 1 0 {2 * r} 0a{r} {r} 0 1 0 {-2 * r} 0z"
-    faint = "".join(dot(x, y, LEVEL_R[0]) for x, y, _ in cells)  # 每格都有：墨点被吃掉以后，那里就只剩这一粒淡点
+    faint = "".join(dot(x, y, LEVEL_R[0]) for x, y, _ in cells)
     ink_dots = "".join(dot(x, y, LEVEL_R[min(lv, 4)]) for x, y, lv in cells if lv)
     fy = H - 26
-    lx = W - PAD - 22  # 图例：少 · · · · · 多
+    lx = W - PAD - 22
     legend_x = [lx - 14 - 15 * (4 - i) for i in range(5)]
     legend_f = dot(legend_x[0], fy - 3.5, LEVEL_R[0])
     legend_d = "".join(dot(legend_x[i], fy - 3.5, LEVEL_R[i]) for i in range(1, 5))
 
-    # 窗口：从笔尖往后 L 长的一段（ahead > 0 时再往前探出一点）。图案周期等于路线全长，绕一圈正好接上
+    # 盖住吃掉的墨点：从鱼头往后一段纸色的宽窗口，尾端五层淡出
     T = total
 
     def window(L, ahead=0.0):
         return f"{ahead:.1f} {T - L:.1f} {L - ahead:.1f} 0"
-
-    def use(width, dash, extra=""):
-        return f'<use href="#route" stroke-width="{width}" stroke-dasharray="{dash}"{extra} />'
     art.defs.append(f'<path id="route" d="{d}" />')
-    regrow = 6.0 * SNAKE_SPEED  # 被吃掉的墨点大约六秒后长回来
-    # 盖住墨点的纸：尾端分五层、每层退一格，墨点一格比一格浓地长回来
-    cover = "".join(use(12.5, window(regrow + SNAKE_P * j, 6), f' stroke-opacity="{op}"') for j, op in ((4, 0.2), (3, 0.4), (2, 0.6), (1, 0.8), (0, 1)))
-    LB = 9 * SNAKE_P  # 笔身长度
-    brush = []
-    for i in range(14):
-        t = i / 13
-        L = LB * (1 - 0.9 * t)
-        w = 0.6 + 5.4 * t ** 1.4
-        op = 0.3 + 0.7 * min(1.0, t * 1.8)
-        brush.append(use(round(w, 2), window(L), f' stroke-opacity="{op:.2f}"' if op < 1 else ""))
-    tip = use(7.4, f"0 {T:.1f}")
+    regrow = 7.0 * SNAKE_SPEED
+    cover = "".join(f'<use href="#route" stroke-width="12.5" stroke-dasharray="{window(regrow + SNAKE_P * j, 10)}" stroke-opacity="{op}" />'
+                    for j, op in ((4, 0.2), (3, 0.4), (2, 0.6), (1, 0.8), (0, 1)))
+
+    # 水纹：每粒墨点第一次被鱼经过的时刻
+    cum = [0.0]
+    for p, q in zip(pts, pts[1:]):
+        cum.append(cum[-1] + math.hypot(q[0] - p[0], q[1] - p[1]))
+    ripples = []
+    for cx, cy, lv in cells:
+        if not lv:
+            continue
+        for i, (p, q) in enumerate(zip(pts, pts[1:])):
+            sx, sy = q[0] - p[0], q[1] - p[1]
+            L2 = sx * sx + sy * sy or 1
+            t = max(0.0, min(1.0, ((cx - p[0]) * sx + (cy - p[1]) * sy) / L2))
+            if math.hypot(p[0] + sx * t - cx, p[1] + sy * t - cy) < 3.5:
+                s_hit = cum[i] + t * math.sqrt(L2)
+                break
+        else:
+            continue
+        t_eat = (s_hit - 10) / SNAKE_SPEED % C
+        ripples.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="5" fill="none" stroke="{INK}" stroke-width="0.9" stroke-opacity="0.6" visibility="hidden">'
+                       f'<set attributeName="visibility" to="visible" begin="rp.begin+{t_eat:.2f}s" dur="0.42s" />'
+                       f'<set attributeName="r" to="9" begin="rp.begin+{t_eat + 0.14:.2f}s" dur="0.14s" />'
+                       f'<set attributeName="r" to="13" begin="rp.begin+{t_eat + 0.28:.2f}s" dur="0.14s" />'
+                       f'<set attributeName="stroke-opacity" to="0.35" begin="rp.begin+{t_eat + 0.14:.2f}s" dur="0.14s" />'
+                       f'<set attributeName="stroke-opacity" to="0.15" begin="rp.begin+{t_eat + 0.28:.2f}s" dur="0.14s" /></circle>')
 
     art.css.append(base_css([bold, reg, jp], f"""  .m {{ font-size: 9.5px; }}
   .go {{ fill: none; stroke-linejoin: round; animation: go {C:.2f}s steps({steps}) infinite; }}
   @keyframes go {{ from {{ stroke-dashoffset: 0; }} to {{ stroke-dashoffset: {-T:.1f}; }} }}
   .cv {{ stroke: {PAPER}; stroke-linecap: round; }}
-  .br {{ stroke: {INK}; stroke-linecap: round; }}
-  @media (prefers-reduced-motion: reduce) {{ .go {{ animation: none; }} }}
+  .fish {{ offset-path: path('{d}'); offset-rotate: auto; animation: swim {C:.2f}s steps({steps}) infinite; }}
+  @keyframes swim {{ from {{ offset-distance: 0%; }} to {{ offset-distance: 100%; }} }}
+  @media (prefers-reduced-motion: reduce) {{ .go, .fish {{ animation: none; }} }}
 """))
-    art.ink(card(W, H) + heading(PAD, HEAD_Y, head_txt, "一筆書き", bold) + rule(PAD, W - PAD, RULE_Y)
+    art.ink(card(W, H) + heading(PAD, HEAD_Y, head_txt, "金魚すくい", bold) + rule(PAD, W - PAD, RULE_Y)
             + f'<path d="{ink_dots}{legend_d}" fill="{INK}" />'
             + f'<g class="go cv">{cover}</g>'
             + f'<path d="{faint}{legend_f}" fill="{INK}" fill-opacity="0.28" />'
@@ -746,17 +845,27 @@ def snake():
             + f'<text class="m" x="{legend_x[0] - 12:.1f}" y="{fy}" text-anchor="end">少</text>'
             f'<text class="m" x="{legend_x[-1] + 12:.1f}" y="{fy}">多</text>'
             f'<text class="s" x="{PAD}" y="{fy}">{foot_txt}</text>'
-            f'<g class="go br">{"".join(brush)}</g>')
-    art.color(*both(f'<g class="go" stroke="{RED}" stroke-linecap="round">{tip}</g>'))
-    art.color(*seal(W - PAD, HEAD_Y - 18, "蛇"))
+            + clock("rp", C) + "".join(ripples))
+
+    def fish(mode):
+        red, edge, shade = (RED, "#a8231f", "#15171d") if mode == "light" else (NIGHT_RED, "#b8322f", "#000000")
+        front, tail, shadow = goldfish_parts(red, edge)
+        tails = clock("tl", 0.1 * len(TAIL_POSES)) + poster(tail(0)) + "".join(cel("tl", [(0.1 * i, 0.1)], tail(a)) for i, a in enumerate(TAIL_POSES))
+        return (f'<g class="fish"><g transform="scale(0.82)">'
+                f'<g fill="{shade}" fill-opacity="{0.13 if mode == "light" else 0.35}">{shadow}</g>{tails}{front}</g></g>')
+    art.color(fish("light"), fish("dark"))
+    art.color(*seal(W - PAD, HEAD_Y - 18, "魚"))
     art.write(PROFILE, "snake")
-    print(f"wrote snake light/dark ({C:.0f}s lap, {steps} steps, route {total:.0f}px, closed={closed})")
+    print(f"wrote goldfish pond light/dark ({C:.0f}s lap, {steps} steps, route {total:.0f}px, {len(ripples)} ripples)")
 
 
 if __name__ == "__main__":
     st, lg = stats_data(), langs_data()
-    if st or lg:
-        stats_card(st, lg)
+    H = stats_height(st, lg)
+    if st:
+        stats(st, H)
+    if lg:
+        top_langs(lg, H)
     pins = sorted(p.stem for p in PROFILE.glob("pin-*.svg") if not p.stem.endswith(("-light", "-dark")))
     for i, name in enumerate(pins, 1):
         pin(name, i, len(pins))

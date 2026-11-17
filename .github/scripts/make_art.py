@@ -19,13 +19,13 @@ from html import escape
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from manga import (EASE, EASE_OUT, GRAY, INK, MINCHO, MINCHO_STACK, NIGHT_INK, NIGHT_RED, PAPER, RED, SERIF,  # noqa: E402
-                   SERIF_STACK, TICK, Art, barcode, cel, chime, clock, cloud, fence, film_strip, flipbook, furin, hanabi_show, lens_flare,
+                   SERIF_STACK, TICK, Art, barcode, cel, chime, clock, cloud, fence, film_strip, flipbook, furin, lens_flare,
                    letters, load_font, pole, poster, rain_field, sheen_grad, splash, splashes, stamp, starburst, sun, sun_ink, sun_rays,
                    title_fx, wagasa, wire, wire_point)
 
 from decorate import HEAD_Y, RULE_Y, SEAL, both, heading, rule, seal, sheet  # noqa: E402
 from decorate import card as shadow_card  # noqa: E402
-from manga import to_night  # noqa: E402
+from manga import FW_DAY, FW_NIGHT, SCHEMES, TITLE_CSS, firework, music_note, star, to_night  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 OUT = ROOT / "profile"
@@ -179,218 +179,287 @@ def footer(F):
     art.ink(title_fx(title, 5.0, 1.25) + jp + frame(W, H))
 
     def seal(red):
-        return (f'<g transform="rotate(-7 {seal_x:.0f} 158)"><circle cx="{seal_x:.0f}" cy="158" r="31" fill="{red}" /><circle cx="{seal_x:.0f}" cy="158" r="26" fill="none" stroke="#ffffff" stroke-width="1.2" />'
-                f'<text x="{seal_x:.0f}" y="169" text-anchor="middle" style="font: 800 30px {MINCHO_STACK}; fill: #ffffff">完</text></g>')
+        # 小一号的“完”字章，贴在 D 的右上角，不压住字
+        sx, sy = seal_x + 8, 150
+        return (f'<g transform="rotate(-7 {sx:.0f} {sy})"><circle cx="{sx:.0f}" cy="{sy}" r="21" fill="{red}" /><circle cx="{sx:.0f}" cy="{sy}" r="17.5" fill="none" stroke="#ffffff" stroke-width="0.9" />'
+                f'<text x="{sx:.0f}" y="{sy + 7.4}" text-anchor="middle" style="font: 800 20px {MINCHO_STACK}; fill: #ffffff">完</text></g>')
     art.color(seal(RED), seal(NIGHT_RED))
     art.write(OUT, "footer")
 
 
-# ---------------------------------------------------------------- 分区标题：静态，居中三行
+# ---------------------------------------------------------------- 分区标题：日文为主、英文为副，顶上一枚朱色圆印写着话数
 KANJI_NUM = "〇一二三四五六七八九十"
 
 
 def title(i, name, english, japanese):
-    """两道两端淡出的发丝线夹着朱色的“第一話”，下面是英文标题和疏排的日文副题。"""
-    W, H = 900, 100
-    bold = load_font(SERIF, 700, english)
-    ep = f"第{KANJI_NUM[i]}話"
-    jp = load_font(MINCHO, 800, ep + japanese)
+    """朱色圆印（话数）两侧拉出两端淡出的发丝线；中间是疏排的明朝体日文标题，下面一行小号的英文，两头各一粒朱点。静态。"""
+    W, H = 900, 104
+    eng = english.upper()
+    reg = load_font(SERIF, 400, eng)
+    jp = load_font(MINCHO, 800, KANJI_NUM[i] + japanese)
     art = Art(W, H, english, lean=True)
     cx = W / 2
-    art.css.append(text_css([bold, jp], f"""
-  .t {{ font: 700 32px {SERIF_STACK}; fill: {INK}; letter-spacing: 0.3px; }}
-  .j {{ font: 800 13px {MINCHO_STACK}; fill: {GRAY}; letter-spacing: 8px; }}
-  .e {{ font: 800 12px {MINCHO_STACK}; letter-spacing: 5px; }}
+    art.css.append(text_css([reg, jp], f"""
+  .tj {{ font: 800 26px {MINCHO_STACK}; fill: {INK}; letter-spacing: 9px; }}
+  .te {{ font: 400 11px {SERIF_STACK}; fill: {GRAY}; letter-spacing: 5px; }}
 """))
-    art.defs.append(f'<linearGradient id="tl" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="{INK}" stop-opacity="0" /><stop offset="1" stop-color="{INK}" stop-opacity="0.5" /></linearGradient>'
-                    f'<linearGradient id="tr" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="{INK}" stop-opacity="0.5" /><stop offset="1" stop-color="{INK}" stop-opacity="0" /></linearGradient>')
-    jw = jp.width(ep, 12, 5) if jp else 48
-    gap = jw / 2 + 18
-    art.ink(f'<rect x="{cx - gap - 130:.1f}" y="17.6" width="130" height="0.8" fill="url(#tl)" />'
-            f'<rect x="{cx + gap:.1f}" y="17.6" width="130" height="0.8" fill="url(#tr)" />'
-            f'<text class="t" x="{cx}" y="62" text-anchor="middle">{escape(english)}</text>'
-            f'<text class="j" x="{cx + 4}" y="90" text-anchor="middle">{escape(japanese)}</text>')
-    ep_svg = f'<text class="e" x="{cx + 2.5}" y="22" text-anchor="middle" fill="{RED}">{ep}</text>'
-    art.color(*both(ep_svg))
+    art.defs.append(f'<linearGradient id="tl" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="{INK}" stop-opacity="0" /><stop offset="1" stop-color="{INK}" stop-opacity="0.55" /></linearGradient>'
+                    f'<linearGradient id="tr" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="{INK}" stop-opacity="0.55" /><stop offset="1" stop-color="{INK}" stop-opacity="0" /></linearGradient>')
+    ew = (reg.width(eng, 11, 5) if reg else 7 * len(eng))
+    art.ink(f'<rect x="{cx - 22 - 170}" y="17.6" width="170" height="0.8" fill="url(#tl)" />'
+            f'<rect x="{cx + 22}" y="17.6" width="170" height="0.8" fill="url(#tr)" />'
+            f'<text class="tj" x="{cx + 4.5}" y="64" text-anchor="middle">{escape(japanese)}</text>'
+            f'<text class="te" x="{cx + 2.5}" y="92" text-anchor="middle">{escape(eng)}</text>')
+    dot_x = ew / 2 + 16
+    mark = (f'<circle cx="{cx}" cy="18" r="11" fill="{RED}" />'
+            f'<circle cx="{cx}" cy="18" r="8.6" fill="none" stroke="#ffffff" stroke-width="0.6" stroke-opacity="0.6" />'
+            f'<text x="{cx}" y="22.2" text-anchor="middle" style="font: 800 12px {MINCHO_STACK}; fill: #ffffff">{KANJI_NUM[i]}</text>'
+            f'<circle cx="{cx - dot_x:.1f}" cy="88.5" r="1.6" fill="{RED}" /><circle cx="{cx + dot_x:.1f}" cy="88.5" r="1.6" fill="{RED}" />')
+    art.color(*both(mark))
     art.write(OUT, f"title-{name}")
 
 
-# ---------------------------------------------------------------- 分隔线：一根电线，中间挂着一只小风铃
+# ---------------------------------------------------------------- 分隔线：一根红白的绳，挂满一排御守和风铃
+OMAMORI = [("#d9412b", "#c79a2c"), ("#24396b", "#d9b45a"), ("#f7f4ee", "#d9412b"), ("#6b4c8a", "#e2c46a"),
+           ("#e48aa8", "#ffffff"), ("#1f6b5c", "#e2c46a")]  # 袋子的颜色、绳结和刺绣的颜色
+
+
+def omamori(uid, body, cord, hang):
+    """一只御守（挂点在原点）：一段细绳、花结、上角斜切的布袋、正中一条白色的刺绣签、袋口一道横纹。"""
+    out = "#15171d"
+    y0 = hang
+    return (f'<g id="{uid}"><path d="M0 0V{y0 + 2}" stroke="{cord}" stroke-width="1" />'
+            f'<ellipse cx="-2.6" cy="{y0 + 2.5}" rx="2.8" ry="1.7" fill="none" stroke="{cord}" stroke-width="1.1" />'
+            f'<ellipse cx="2.6" cy="{y0 + 2.5}" rx="2.8" ry="1.7" fill="none" stroke="{cord}" stroke-width="1.1" />'
+            f'<path d="M-7.5 {y0 + 7}L-5.5 {y0 + 5}H5.5L7.5 {y0 + 7}V{y0 + 27}Q7.5 {y0 + 29} 5.5 {y0 + 29}H-5.5Q-7.5 {y0 + 29} -7.5 {y0 + 27}Z" fill="{body}" stroke="{out}" stroke-width="0.8" />'
+            f'<path d="M-7.5 {y0 + 9.5}H7.5" stroke="{cord}" stroke-width="1" stroke-opacity="0.9" />'
+            f'<rect x="-2.4" y="{y0 + 12}" width="4.8" height="13" rx="0.6" fill="#ffffff" fill-opacity="0.92" stroke="{cord}" stroke-width="0.5" />'
+            f'<path d="M0 {y0 + 14.5}v2M0 {y0 + 18.5}v2M0 {y0 + 22}v1.6" stroke="{out}" stroke-width="0.9" stroke-opacity="0.7" /></g>')
+
+
 def divider():
-    """两根两端淡出的电线，最低处挂一只风铃；每隔几秒来一阵风，红色的短册摆几下、铃边荡开两道声纹，然后又静下来。
-    摆动是六格翻页（<set>），静止的那几秒里浏览器什么都不用做。"""
-    W, H = 800, 86
-    cx, top = W / 2, 13
+    """一根垂下来的红白绳（花火大会、神社那种），等距挂着御守和风铃。每 6.4 秒吹过一阵风：从左到右一只接一只地摆几下，
+    然后又静下来。所有挂件在 <defs> 里只画一次，每一格只是一组 <use> 换角度（<set> 翻页），静止的几秒里浏览器什么都不做。"""
+    W, H = 800, 108
+    x0, x1, top, sag = 18, W - 18, 12, 20
     art = Art(W, H, role="presentation", lean=True)
-    art.defs.append(f'<linearGradient id="wire" gradientUnits="userSpaceOnUse" x1="0" x2="{W}" y1="0" y2="0"><stop offset="0.02" stop-color="{INK}" stop-opacity="0" />'
-                    f'<stop offset="0.2" stop-color="{INK}" /><stop offset="0.8" stop-color="{INK}" /><stop offset="0.98" stop-color="{INK}" stop-opacity="0" /></linearGradient>')
-    sag = 22
-    hang = top + sag / 2  # 二次曲线中点的高度
-    wires = (f'<path d="M14 {top}Q{cx} {top + sag} {W - 14} {top}" fill="none" stroke="url(#wire)" stroke-width="1.3" />'
-             f'<path d="M14 {top + 9}Q{cx} {top + sag + 4} {W - 14} {top + 9}" fill="none" stroke="url(#wire)" stroke-width="0.8" stroke-opacity="0.5" />')
-    # 电线上的几枚小结：左右对称，离中心越远越小
-    knots = "".join(f'<rect x="{cx + sx * dx - r:.1f}" y="{top + sag * (1 - (dx / (cx - 14)) ** 2) / 2 - r:.1f}" width="{2 * r}" height="{2 * r}" fill="{PAPER}" stroke="{INK}" stroke-width="0.9" '
-                    f'transform="rotate(45 {cx + sx * dx:.1f} {top + sag * (1 - (dx / (cx - 14)) ** 2) / 2:.1f})" />'
-                    for dx, r in ((118, 2.6), (196, 2.0), (262, 1.5)) for sx in (-1, 1))
-    art.ink(wires + knots)
-    # 风铃：静止的姿势平时显示，起风的 0.96 秒里换成六个摆动的姿势
-    poses = [(4, 15), (-3, -11), (2.4, 8), (-1.6, -5), (1, 3), (-0.5, -1.5)]
-    dur, t0, period = 0.16, 1.6, 6.4
-    rest_i, rest_c = furin(cx, hang, 0.92)
-    hide = f'<set attributeName="visibility" to="hidden" begin="k.begin+{t0:.2f}s" dur="{dur * len(poses):.2f}s" />'
-    ink, col = [clock("k", period), f"<g>{rest_i}{hide}</g>"], [f"<g>{rest_c}{hide}</g>"]
-    for i, (tilt, paper) in enumerate(poses):
-        pi, pc = furin(cx, hang, 0.92, tilt, paper)
-        ring = ""
-        if i < 2:  # 头两格：铃边两道声纹
-            r = 17 + 7 * i
-            ring = (f'<path d="M{cx - r:.1f} {hang + 9:.1f}a{r} {r} 0 0 0 0 {r * 0.9:.1f}M{cx + r:.1f} {hang + 9:.1f}a{r} {r} 0 0 1 0 {r * 0.9:.1f}" fill="none" stroke="{INK}" '
-                    f'stroke-width="{1.1 - 0.3 * i:.1f}" stroke-linecap="round" stroke-opacity="{0.8 - 0.3 * i:.1f}" />')
-        ink.append(cel("k", [(t0 + i * dur, dur)], pi + ring))
-        col.append(cel("k", [(t0 + i * dur, dur)], pc))
-    art.ink("".join(ink))
-    art.color(*both("".join(col)))
+
+    def rope_pt(t):
+        mx, my = (x0 + x1) / 2, top + sag * 2
+        u = 1 - t
+        return u * u * x0 + 2 * u * t * mx + t * t * x1, u * u * top + 2 * u * t * my + t * t * top
+    items = []  # (类型, t, 吊绳长度)
+    n = 29  # 挂得满满的：相邻两只一高一低错开，远看连成一整排
+    for i in range(n):
+        t = 0.035 + 0.93 * i / (n - 1)
+        hang = (3 if i % 2 == 0 else 15) + (i % 3) * 2
+        items.append(("fu" if i % 4 in (1, 3) and i % 8 != 5 else "om", t, hang))
+    period, t0, pose_dur, lag = 6.4, 1.2, 0.16, 0.035
+    swing = [9, -6.5, 4.5, -3, 1.6, -0.6]  # 一阵风里每只挂件依次摆到的角度
+
+    def body(mode):
+        red = RED if mode == "light" else NIGHT_RED
+        ink = INK if mode == "light" else NIGHT_INK
+        defs = []
+        for k, (body_c, cord) in enumerate(OMAMORI):
+            for hang in sorted({h for kind, _, h in items if kind == "om"}):
+                defs.append(omamori(f"om{k}_{hang}", body_c, cord, hang))
+        for hang in sorted({h for kind, _, h in items if kind == "fu"}):
+            for tilt_k, paper in ((0, 0.0), (1, 12.0), (2, -9.0)):
+                fi, fc = furin(0, hang, 0.6, 0, paper, red)
+                fi = fi if mode == "light" else to_night(fi)
+                defs.append(f'<g id="fu{hang}_{tilt_k}"><path d="M0 0V{hang}" stroke="{ink}" stroke-width="0.8" />{fi}{fc}</g>')
+        a, b = rope_pt(0.5)
+        rope_d = f"M{x0} {top}Q{(x0 + x1) / 2} {top + sag * 2} {x1} {top}"
+        rope = (f'<path d="{rope_d}" fill="none" stroke="{red}" stroke-width="2.4" stroke-linecap="round" />'
+                f'<path d="{rope_d}" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-dasharray="2.4 2.4" stroke-opacity="0.9" />'
+                + "".join(f'<path d="M{x} {top}c-2 6 -3 14 -2 22M{x} {top}c0 7 0 15 0 24M{x} {top}c2 6 3 14 2 22" stroke="#c79a2c" stroke-width="1" fill="none" stroke-linecap="round" />'
+                          f'<circle cx="{x}" cy="{top}" r="3" fill="{red}" />' for x in (x0, x1)))
+
+        def pose(angles):
+            out = []
+            for i, (kind, t, hang) in enumerate(items):
+                px, py = rope_pt(t)
+                a = angles[i]
+                if kind == "om":
+                    ref = f"om{(i * 5 // 3) % len(OMAMORI)}_{hang}"
+                else:
+                    ref = f"fu{hang}_{0 if abs(a) < 1 else (1 if a > 0 else 2)}"
+                out.append(f'<use href="#{ref}" transform="translate({px:.1f} {py:.1f}) rotate({a:.1f})" />')
+            return "".join(out)
+        frames, k = [], 0
+        end = t0 + lag * (n - 1) + pose_dur * len(swing)
+        tick = 0.08
+        while t0 + k * tick < end:
+            tt = t0 + k * tick
+            angles = []
+            for i in range(n):
+                j = int((tt - t0 - lag * i) // pose_dur)
+                angles.append(swing[j] * (1.25 if items[i][0] == "fu" else 1) if 0 <= j < len(swing) else 0)
+            frames.append(cel("dv", [(tt, tick)], pose(angles)))
+            k += 1
+        rest = f'<g>{pose([0] * n)}<set attributeName="visibility" to="hidden" begin="dv.begin+{t0:.2f}s" dur="{k * tick:.2f}s" /></g>'
+        return f'<defs>{"".join(defs)}</defs>' + rope + clock("dv", period) + rest + "".join(frames)
+    art.color(body("light"), body("dark"))
     art.write(OUT, "divider")
 
 
-# ---------------------------------------------------------------- 播放卡：封面、转着的唱片、跳动的波形、走着的进度
-def spotify_mark(x, y, r=7.5):
-    return (f'<g transform="translate({x} {y})"><circle r="{r}" fill="{INK}" />'
-            f'<path d="M-4.6 -1.8Q0 -4.6 4.6 -1.8" fill="none" stroke="{PAPER}" stroke-width="1.6" stroke-linecap="round" />'
-            f'<path d="M-3.8 0.9Q0 -1.3 3.8 0.9" fill="none" stroke="{PAPER}" stroke-width="1.4" stroke-linecap="round" />'
-            f'<path d="M-3 3.4Q0 1.8 3 3.4" fill="none" stroke="{PAPER}" stroke-width="1.2" stroke-linecap="round" /></g>')
+# ---------------------------------------------------------------- 播放卡：夏天的漫画分格
+def qwave(k, amp, phase, cy, x0, x1):
+    """一条正弦声波，每半个波长用一段二次贝塞尔（控制点在波峰处），比逐点采样省很多字节。amp(x) 是包络。返回 (d, 点列)。"""
+    xs = [x0]
+    n = math.floor((k * x0 + phase) / math.pi) + 1
+    while True:
+        x = (n * math.pi - phase) / k
+        if x >= x1:
+            break
+        xs.append(x)
+        n += 1
+    xs.append(x1)
+    segs = []
+    for a, b in zip(xs, xs[1:]):
+        m = (a + b) / 2
+        h = amp(m) * math.sin(k * m + phase)
+        segs.append((m, h, b))
+    return segs
 
 
-def vinyl(cx, cy, r, dark):
-    """唱片不转的部分：盘面、纹路、两道反光（反光不跟着转）。深色版也保持一张黑胶，只是加一圈浅色的边。"""
-    disc, line = ("#0b0d11", "#eceae6") if dark else (INK, PAPER)
-    grooves = "".join(f'<circle cx="{cx}" cy="{cy}" r="{rr}" />' for rr in range(int(r * 0.45), int(r) - 3, 4))
+def wave_d(segs, cy, flip=1, start=True):
+    out = f"M{segs[0][0] - (segs[0][2] - segs[0][0]):.1f} {cy}" if start else ""
+    for m, h, b in segs:
+        out += f"Q{m:.1f} {cy - 2 * h * flip:.1f} {b:.1f} {cy}"
+    return out
 
-    def glint(a0, a1, rr):
-        return f"M{cx + rr * math.cos(a0):.1f} {cy + rr * math.sin(a0):.1f}A{rr:.1f} {rr:.1f} 0 0 1 {cx + rr * math.cos(a1):.1f} {cy + rr * math.sin(a1):.1f}"
-    shine = "".join(glint(a, a + 0.62 - 0.06 * k, r * (0.9 - 0.12 * k)) for a in (-2.35, 0.79) for k in range(4))
-    rim = f'<circle cx="{cx}" cy="{cy}" r="{r - 0.5}" fill="none" stroke="{line}" stroke-width="1" stroke-opacity="0.35" />' if dark else ""
-    return (f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{disc}" />{rim}'
-            f'<g fill="none" stroke="{line}" stroke-width="0.5" stroke-opacity="{0.16 if dark else 0.22}">{grooves}</g>'
-            f'<path d="{shine}" fill="none" stroke="{line}" stroke-width="2" stroke-linecap="round" stroke-opacity="{0.22 if dark else 0.32}" />')
+
+def cumulus(base):
+    """入道云：一团团圆叠成塔，墨色外轮廓、平平的云底，背光的下半部铺网点。静态。"""
+    rows = [(base - 24, [(694, 30), (738, 36), (788, 38), (838, 34), (884, 32)]),
+            (base - 66, [(718, 28), (762, 36), (810, 32), (854, 28)]),
+            (base - 106, [(744, 26), (788, 32), (828, 24)]),
+            (base - 140, [(770, 23), (804, 21)]),
+            (base - 166, [(788, 17)])]
+    circ = [(x, y, r) for y, row in rows for x, r in row]
+    union = "".join(f'<circle cx="{x}" cy="{y}" r="{r}" />' for x, y, r in circ)
+    ring = "".join(f'<circle cx="{x}" cy="{y}" r="{r + 1.6}" />' for x, y, r in circ)
+    bumps = []
+    for x, y, r in circ[5:]:
+        a0, a1 = math.radians(150), math.radians(250)
+        bumps.append(f"M{x + r * math.cos(a0):.1f} {y + r * math.sin(a0):.1f}A{r} {r} 0 0 1 {x + r * math.cos(a1):.1f} {y + r * math.sin(a1):.1f}")
+    return (f'<clipPath id="cuBase"><rect x="600" y="0" width="320" height="{base}" /></clipPath>'
+            f'<clipPath id="cuBody">{union}</clipPath>'
+            f'<linearGradient id="cuFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{PAPER}" /><stop offset="1" stop-color="{PAPER}" stop-opacity="0" /></linearGradient>'
+            f'<g clip-path="url(#cuBase)"><g fill="{INK}">{ring}</g><g fill="{PAPER}">{union}</g>'
+            f'<g clip-path="url(#cuBody)"><rect x="640" y="{base - 90}" width="280" height="90" fill="url(#tone)" fill-opacity="0.6" />'
+            f'<rect x="640" y="{base - 91}" width="280" height="60" fill="url(#cuFade)" />'
+            f'<path d="{"".join(bumps)}" fill="none" stroke="{INK}" stroke-width="0.9" stroke-linecap="round" stroke-opacity="0.75" /></g></g>'
+            f'<path d="M{664} {base}H{900}" stroke="{INK}" stroke-width="1.2" />')
 
 
 def now_playing():
-    """每 0.1 秒换一格（十格一秒）：唱片的标签转过一个角度、波形换一组高度——两样在同一格里一起换，每 0.1 秒只重画一次。
-    整首歌 3 分 24 秒走完一遍：播放头每 3.2 秒往前一步，走过的波形是实墨、没走到的是淡墨；时间每秒跳一下。全部是 <set> 翻页。"""
-    W, H = 900, 268
+    """一格夏天的漫画：网点天空、入道云、两根电线和一只风铃；左边一张用纸胶带贴着的拍立得（封面），
+    右边是叙述框“NOW PLAYING 再生中”、漫画标题字的曲名、明朝体的歌手名；底下横贯一道会动的声波（网点填充 + 墨线 + 一根朱线）。
+    声波每 0.08 秒换一格（二十格一个循环）；风铃每 6.4 秒被风吹动一次；音符一上一下。全部是 <set> 翻页，不用滤镜。"""
+    W, H = 900, 300
     song, artist, artist_jp = TRACK
-    ring = f"{artist.upper()}  ·  {song.upper()}  ·  ヨルシカ  ·  "
-    bold = load_font(SERIF, 700, song + "Now Playing")
-    reg = load_font(SERIF, 400, artist + ring + "SPOTIFY 0123456789:")
-    jp = load_font(MINCHO, 800, artist_jp + "再生中音" + ring)
-    art = sheet(W, H, f"Now playing on Spotify: {artist} - {song}")
+    song_jp = "ヒッチコック"
+    black = load_font(SERIF, 800, song)
+    reg = load_font(SERIF, 400, "NOW PLAYING — Yorushika")
+    jp = load_font(MINCHO, 800, artist_jp + song_jp + "再生中ミーンミン…夏の音")
+    art = Art(W, H, f"Now playing on Spotify: {artist} - {song}", lean=True)
     cover = base64.b64encode((OUT / "images" / "cover.jpg").read_bytes()).decode()
-    art.css.append(text_css([bold, reg, jp], f"""
-  .h {{ font: 700 17px {SERIF_STACK}; fill: {INK}; }}
-  .hj {{ font: 800 11px {MINCHO_STACK}; fill: {GRAY}; letter-spacing: 4px; }}
-  .np-l {{ font: 400 9.5px {SERIF_STACK}; fill: {GRAY}; letter-spacing: 3px; }}
-  .np-t {{ font: 700 36px {SERIF_STACK}; fill: {INK}; }}
-  .np-a {{ font: 400 17px {SERIF_STACK}; fill: {INK}; fill-opacity: 0.8; }}
-  .np-j {{ font: 800 12px {MINCHO_STACK}; fill: {GRAY}; letter-spacing: 3px; }}
-  .np-c {{ font: 400 11px {SERIF_STACK}; fill: {INK}; fill-opacity: 0.7; }}
-  .np-r {{ font: 400 6.4px {SERIF_STACK}, {MINCHO_STACK}; fill: #ffffff; fill-opacity: 0.92; letter-spacing: 1.2px; }}
+    art.css.append(text_css([black, reg, jp], TITLE_CSS + f"""
+  .np-hero {{ font: 800 68px {SERIF_STACK}; fill: {INK}; stroke: {PAPER}; stroke-width: 3px; paint-order: stroke; stroke-linejoin: round; }}
+  .np-jp {{ font: 800 22px {MINCHO_STACK}; fill: {INK}; letter-spacing: 5px; stroke: {PAPER}; stroke-width: 6px; paint-order: stroke; stroke-linejoin: round; }}
+  .np-en {{ font: 400 15px {SERIF_STACK}; fill: {INK}; fill-opacity: 0.8; stroke: {PAPER}; stroke-width: 5px; paint-order: stroke; }}
+  .np-cap {{ font: 400 10.5px {SERIF_STACK}; fill: {INK}; letter-spacing: 3.5px; }}
+  .np-cj {{ font: 800 12px {MINCHO_STACK}; fill: {RED}; letter-spacing: 3px; }}
+  .np-sfx {{ font: 800 18px {MINCHO_STACK}; fill: {PAPER}; stroke: {INK}; stroke-width: 2.6px; paint-order: stroke; stroke-linejoin: round; }}
+  .np-pol {{ font: 800 12px {MINCHO_STACK}; fill: #2b2d33; letter-spacing: 3px; }}
 """))
-    CX0, CY0, CS = 30, 80, 164          # 封面
-    VX, VY, VR = CX0 + CS + 36, CY0 + CS / 2, 80   # 唱片：从封面后面滑出一半
-    LR = 28                             # 标签半径
-    X, X1 = 368, W - 30                 # 右边的文字栏
-    art.defs.append(f'<clipPath id="coverClip"><rect x="{CX0}" y="{CY0}" width="{CS}" height="{CS}" rx="5" /></clipPath>'
-                    f'<path id="lbl" d="M{VX - LR + 7} {VY}a{LR - 7} {LR - 7} 0 1 1 {2 * (LR - 7)} 0a{LR - 7} {LR - 7} 0 1 1 {-2 * (LR - 7)} 0" />')
-    art.ink(shadow_card(W, H) + heading(30, HEAD_Y, "Now Playing", "再生中", bold) + rule(30, W - 30, RULE_Y)
-            + f'{spotify_mark(W - 30 - SEAL - 92, HEAD_Y - 4.5, 6.5)}<text class="np-l" x="{W - 30 - SEAL - 80}" y="{HEAD_Y - 1}">SPOTIFY</text>')
-    art.color(vinyl(VX, VY, VR, False), vinyl(VX, VY, VR, True))
+    art.defs.append(inside(W, H) + paper_fade("skyUp"))
 
-    # ---- 一格画面：标签转一个角度 + 一组波形高度 ----
-    F, FRAME = 32, 0.1
-    rng = random.Random(11)
-    NB = 66
-    pitch = (X1 - X) / (NB - 1)
-    WY, WA = 196, 17                    # 波形的中线、最大半高
-    # 整首歌的“轮廓”：几段起伏叠出来的包络，前奏轻、副歌满
-    env = []
-    for k in range(NB):
-        u = k / (NB - 1)
-        e = 0.32 + 0.5 * (0.5 + 0.5 * math.sin(u * 9.4 - 1.2)) * (0.6 + 0.4 * math.sin(u * 3.1 + 0.4)) + rng.uniform(0, 0.22)
-        env.append(min(1.0, e * (0.55 if u < 0.06 or u > 0.95 else 1)))
-    wob = [(rng.choice([1, 2, 2, 3, 3, 4]), rng.uniform(0, 6.28), rng.uniform(0, 6.28)) for _ in range(NB)]
+    # ---- 天空、入道云、电线 ----
+    cl = cumulus(206)
+    wires = (f'<path d="M12 58Q450 112 888 46" fill="none" stroke="{INK}" stroke-width="1.5" />'
+             f'<path d="M12 72Q450 128 888 60" fill="none" stroke="{INK}" stroke-width="1" />')
+    art.ink(panel(W, H) + f'<g clip-path="url(#inside)">'
+            f'<rect x="12" y="12" width="{W - 24}" height="190" fill="url(#tone)" fill-opacity="0.55" /><rect x="12" y="11" width="{W - 24}" height="192" fill="url(#skyUp)" />'
+            f'{cl}{wires}'
+            f'<g transform="rotate(-7 600 40)"><text class="np-sfx" x="576" y="48">ミーン</text><text class="np-sfx" x="590" y="68" style="font-size:13px">ミンミン…</text></g></g>')
 
-    def label(a):
-        return (f'<g transform="rotate({a:.2f} {VX} {VY})">'
-                f'<circle cx="{VX}" cy="{VY}" r="{LR}" fill="{RED}" />'
-                f'<circle cx="{VX}" cy="{VY}" r="{LR - 12}" fill="none" stroke="#ffffff" stroke-width="0.5" stroke-opacity="0.55" />'
-                f'<text class="np-r"><textPath href="#lbl">{escape(ring)}</textPath></text>'
-                f'<path d="M{VX} {VY - LR + 13}v5" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" stroke-opacity="0.85" /></g>'
-                f'<circle cx="{VX}" cy="{VY}" r="3" fill="{PAPER}" />')
+    # ---- 风铃：挂在上面那根电线的右端，每 6.4 秒一阵风 ----
+    fx, fy = 842, 54
+    poses = [(5, 16), (-4, -12), (3, 9), (-2, -6), (1.2, 3.5), (-0.5, -1.5)]
+    dur, t0 = 0.16, 2.4
+    hide = f'<set attributeName="visibility" to="hidden" begin="fw.begin+{t0:.2f}s" dur="{dur * len(poses):.2f}s" />'
+    ri, rc = furin(fx, fy, 1.0)
+    fi, fc = [clock("fw", 6.4), f"<g>{ri}{hide}</g>"], [f"<g>{rc}{hide}</g>"]
+    for i, (tilt, paper) in enumerate(poses):
+        pi, pc = furin(fx, fy, 1.0, tilt, paper)
+        fi.append(cel("fw", [(t0 + i * dur, dur)], pi))
+        fc.append(cel("fw", [(t0 + i * dur, dur)], pc))
+    art.ink(f'<g clip-path="url(#inside)">{"".join(fi)}</g>')
+    art.color(*both(f'<g clip-path="url(#inside)">{"".join(fc)}</g>'))
 
-    def wave(f):
-        ph = 2 * math.pi * f / F
-        beat = max(0.0, math.cos(ph * 4)) ** 6  # 一圈四拍
-        d = []
-        for k in range(NB):
-            f1, p1, p2 = wob[k]
-            live = 0.62 + 0.26 * math.sin(ph * f1 + p1) + 0.12 * math.sin(ph * 2 * f1 + p2) + 0.18 * beat
-            h = max(1.4, WA * env[k] * min(1.15, live))
-            d.append(f"M{X + k * pitch:.1f} {WY - h:.1f}V{WY + h:.1f}")
-        return f'<path d="{"".join(d)}" stroke="{INK}" stroke-width="2.6" stroke-linecap="round" fill="none" />'
-    frames = clock("e", F * FRAME) + poster(label(0) + wave(5)) + "".join(cel("e", [(f * FRAME, FRAME)], label(360 * f / F) + wave(f)) for f in range(F))
-    art.color(frames, to_night(frames).replace(RED, NIGHT_RED))
+    # ---- 声波：横贯底部，网点填充的波形 + 一粗一细两根墨线 + 一根朱线 ----
+    F, FRAME = 20, 0.08
+    X0, X1, CY = 12, W - 12, 250
 
-    # 封面盖在唱片上面；唱臂搭在唱片外圈
-    art.color(f'<image x="{CX0}" y="{CY0}" width="{CS}" height="{CS}" preserveAspectRatio="xMidYMid slice" clip-path="url(#coverClip)" href="data:image/jpeg;base64,{cover}" />')
-    PX, PY = VX + VR + 18, CY0 + 6
-    HX, HY = VX + 34, VY + 46
-    art.ink(f'<rect x="{CX0}" y="{CY0}" width="{CS}" height="{CS}" rx="5" fill="none" stroke="{INK}" stroke-width="1" stroke-opacity="0.5" />'
-            f'<circle cx="{PX}" cy="{PY}" r="8" fill="{PAPER}" stroke="{INK}" stroke-width="1" /><circle cx="{PX}" cy="{PY}" r="2.6" fill="{INK}" />'
-            f'<path d="M{PX} {PY}L{PX - 4} {HY - 44}L{HX + 6} {HY - 6}" fill="none" stroke="{INK}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />'
-            f'<rect x="{HX - 3}" y="{HY - 9}" width="9" height="13" rx="1.5" fill="{INK}" transform="rotate(40 {HX + 1.5} {HY - 2.5})" />'
-            f'<text class="np-t" x="{X}" y="{CY0 + 40}">{escape(song)}</text>'
-            f'<text class="np-a" x="{X}" y="{CY0 + 70}">{escape(artist)}</text>'
-            f'<text class="np-j" x="{X + (reg.width(artist, 17) if reg else 90) + 14:.1f}" y="{CY0 + 70}">{artist_jp}</text>')
+    def env(x, beat, ph):
+        u = (x - X0) / (X1 - X0)
+        return math.sin(math.pi * u) ** 1.6 * (0.72 + 0.28 * math.sin(3 * math.pi * u - ph)) * beat
+    ink_frames, red_frames = [], []
+    for f in range(F + 1):
+        ph = 2 * math.pi * (f % F) / F
+        beat = 0.82 + 0.18 * abs(math.sin(2 * ph))
+        main = qwave(2 * math.pi / 92, lambda x: 24 * env(x, beat, ph), -ph, CY, X0, X1)
+        echo = qwave(2 * math.pi / 58, lambda x: 15 * env(x, beat, ph + 1), 2 * ph + 1, CY, X0, X1)
+        accent = qwave(2 * math.pi / 130, lambda x: 18 * env(x, beat, ph + 2), -ph + 2, CY, X0, X1)
+        upper = wave_d(main, CY)
+        lower = "".join(f"Q{m:.1f} {CY + 2 * h:.1f} {a:.1f} {CY}" for (m, h, _), a in zip(reversed(main), [s[2] for s in reversed(main[:-1])] + [main[0][0] - (main[0][2] - main[0][0])]))
+        ink_frames.append(f'<path d="{upper}{lower}Z" fill="url(#toneFine)" fill-opacity="0.75" />'
+                          f'<path d="{upper}" fill="none" stroke="{INK}" stroke-width="2.2" stroke-linecap="round" />'
+                          f'<path d="{wave_d(echo, CY)}" fill="none" stroke="{INK}" stroke-width="1" stroke-opacity="0.5" />')
+        red_frames.append(f'<path d="{wave_d(accent, CY)}" fill="none" stroke="{RED}" stroke-width="1.5" stroke-linecap="round" />')
+    art.ink(f'<g clip-path="url(#inside)"><path d="M{X0} {CY}H{X1}" stroke="{INK}" stroke-width="0.6" stroke-opacity="0.4" />'
+            + clock("w", F * FRAME) + poster(ink_frames[3]) + "".join(cel("w", [(f * FRAME, FRAME)], ink_frames[f]) for f in range(F)) + "</g>")
+    art.color(*both(f'<g clip-path="url(#inside)">' + poster(red_frames[3]) + "".join(cel("w", [(f * FRAME, FRAME)], red_frames[f]) for f in range(F)) + "</g>"))
 
-    # ---- 进度：每 3.2 秒往前一步，一共 64 步走完；没走到的波形盖一层半透明的纸 ----
-    STEPS = 64
-    SONG = STEPS * F * FRAME  # 204.8 秒
-    TY = H - 30               # 时间和按钮那一行
+    # ---- 拍立得：封面，纸胶带贴着，微微歪着 ----
+    PX, PY, PW, PH, PI = 62, 34, 196, 230, 12
+    pc = (PX + PW / 2, PY + PH / 2)
+    art.defs.append(f'<clipPath id="photo"><rect x="{PX + PI}" y="{PY + PI}" width="{PW - 2 * PI}" height="{PW - 2 * PI}" /></clipPath>'
+                    f'<pattern id="tapeStripe" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="6" fill="{RED}" fill-opacity="0.35" /></pattern>')
+    tape = (f'<g transform="rotate(-4 {pc[0]} {PY})"><rect x="{pc[0] - 38}" y="{PY - 10}" width="76" height="20" fill="#f1e7c4" fill-opacity="0.88" />'
+            f'<rect x="{pc[0] - 38}" y="{PY - 10}" width="76" height="20" fill="url(#tapeStripe)" />'
+            f'<path d="M{pc[0] - 38} {PY - 10}l-2 3l2 3l-2 3l2 3l-2 3l2 3l-2 2M{pc[0] + 38} {PY - 10}l2 3l-2 3l2 3l-2 3l2 3l-2 3l2 2" stroke="#f1e7c4" stroke-width="1" fill="none" /></g>')
+    polaroid = (f'<g transform="rotate(-5 {pc[0]} {pc[1]})">'
+                f'<rect x="{PX + 5}" y="{PY + 7}" width="{PW}" height="{PH}" fill="#000000" fill-opacity="0.22" />'
+                f'<rect x="{PX}" y="{PY}" width="{PW}" height="{PH}" fill="#fbfaf6" stroke="#15171d" stroke-opacity="0.35" stroke-width="0.8" />'
+                f'<image x="{PX + PI}" y="{PY + PI}" width="{PW - 2 * PI}" height="{PW - 2 * PI}" preserveAspectRatio="xMidYMid slice" clip-path="url(#photo)" href="data:image/jpeg;base64,{cover}" />'
+                f'<rect x="{PX + PI}" y="{PY + PI}" width="{PW - 2 * PI}" height="{PW - 2 * PI}" fill="none" stroke="#15171d" stroke-opacity="0.25" stroke-width="0.6" />'
+                f'<text class="np-pol" x="{pc[0]}" y="{PY + PH - 12}" text-anchor="middle">夏の音 · {song_jp}</text>{tape}</g>')
+    art.color(polaroid)
 
-    def progress(i):
-        x = X + (X1 - X) * i / (STEPS - 1)
-        return f'<rect x="{x + 2:.1f}" y="{WY - WA - 3}" width="{X1 - x + 1:.1f}" height="{2 * WA + 6}" fill="{PAPER}" fill-opacity="0.7" />'
+    # ---- 音符：拍立得右上，一上一下 ----
+    def notes(dy):
+        return (f'<g transform="translate(286 {84 + dy}) rotate(12)">{music_note(0, 1.0)}</g>'
+                f'<g transform="translate(300 {128 - dy}) rotate(-10)">{music_note(1, 0.8)}</g>')
+    art.ink(clock("nt", 1.2) + poster(notes(0)) + cel("nt", [(0, 0.6)], notes(-3)) + cel("nt", [(0.6, 0.6)], notes(3)))
 
-    def head(i):
-        x = X + (X1 - X) * i / (STEPS - 1)
-        return f'<path d="M{x:.1f} {WY - WA - 5}V{WY + WA + 5}" stroke="{RED}" stroke-width="1.4" stroke-linecap="round" /><circle cx="{x:.1f}" cy="{WY - WA - 5}" r="2.6" fill="{RED}" />'
-
-    def digit(x, v):
-        return f'<text class="np-c" x="{x}" y="{TY}" text-anchor="middle">{v}</text>'
-    DX = [X + 3.2, X + 12.8, X + 19.6]  # 分、十秒、秒 三位的位置；冒号在 X + 8
-    secs = int(SONG)
-    clockface = [cel("s", [(60 * m, min(60, SONG - 60 * m))], digit(DX[0], m)) for m in range(secs // 60 + 1)]
-    clockface += [cel("s", [(60 * m + 10 * v, min(10, SONG - 60 * m - 10 * v)) for m in range(secs // 60 + 1) if 60 * m + 10 * v < SONG], digit(DX[1], v)) for v in range(6)]
-    clockface += [cel("s", [(10 * q + v, min(1, SONG - 10 * q - v)) for q in range(secs // 10 + 1) if 10 * q + v < SONG], digit(DX[2], v)) for v in range(10)]
-    still_i = 36
-    dim = clock("s", SONG) + poster(progress(still_i) + "".join(digit(x, v) for x, v in zip(DX, (1, 5, 5)))) + "".join(cel("s", [(i * F * FRAME, F * FRAME)], progress(i)) for i in range(STEPS)) + "".join(clockface)
-    art.ink(dim + f'<text class="np-c" x="{X + 8}" y="{TY - 1}" text-anchor="middle">:</text>'
-            f'<text class="np-c" x="{X1}" y="{TY}" text-anchor="end">3:24</text>')
-    heads = poster(head(still_i)) + "".join(cel("s", [(i * F * FRAME, F * FRAME)], head(i)) for i in range(STEPS))
-    art.color(*both(heads))
-
-    # ---- 按钮：随机、上一首、暂停（正在播放）、下一首、循环 ----
-    bx, by = (X + X1) / 2, TY - 4
-    sw = f'fill="none" stroke="{INK}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"'
-    art.ink(f'<g {sw} stroke-opacity="0.55">'
-            f'<path d="M{bx - 92} {by - 4}h4c4 0 6 8 10 8h4M{bx - 92} {by + 4}h4c4 0 6 -8 10 -8h4M{bx - 76} {by - 6.5}l2.5 2.5l-2.5 2.5M{bx - 76} {by + 1.5}l2.5 2.5l-2.5 2.5" />'
-            f'<path d="M{bx + 74} {by - 2}v-1.5a3 3 0 0 1 3 -3h10l-2.5 -2.5M{bx + 92} {by + 2}v1.5a3 3 0 0 1 -3 3h-10l2.5 2.5" /></g>'
-            f'<path d="M{bx - 40} {by - 6}v12M{bx - 37} {by}l10 -6.5v13z" fill="{INK}" fill-opacity="0.8" stroke="{INK}" stroke-width="1.3" stroke-opacity="0.8" stroke-linejoin="round" />'
-            f'<path d="M{bx + 40} {by - 6}v12M{bx + 37} {by}l-10 -6.5v13z" fill="{INK}" fill-opacity="0.8" stroke="{INK}" stroke-width="1.3" stroke-opacity="0.8" stroke-linejoin="round" />'
-            f'<circle cx="{bx}" cy="{by}" r="14" fill="{INK}" />'
-            f'<path d="M{bx - 3.2} {by - 5}v10M{bx + 3.2} {by - 5}v10" stroke="{PAPER}" stroke-width="2.4" stroke-linecap="round" />')
-    art.color(*seal(W - 30, HEAD_Y - 18, "音"))
+    # ---- 文字：叙述框、标题字、歌手名 ----
+    X = 344
+    cap_w = 210
+    hero = f'<text class="np-hero" x="{X}" y="150">{escape(song)}</text>'
+    art.ink(f'<rect x="{X + 3}" y="{37}" width="{cap_w}" height="28" fill="{INK}" />'
+            f'<rect x="{X}" y="34" width="{cap_w}" height="28" fill="{PAPER}" stroke="{INK}" stroke-width="1.6" />'
+            f'<text class="np-cap" x="{X + 14}" y="52">NOW PLAYING</text>'
+            + title_fx(hero, 5.0, 1.25)
+            + f'<text class="np-jp" x="{X + 2}" y="190">{artist_jp}</text>'
+            f'<text class="np-en" x="{X + (jp.width(artist_jp, 22, 5) if jp else 96) + 14:.1f}" y="189">— {escape(artist)}</text>')
+    art.color(*both(f'<text class="np-cj" x="{X + cap_w - 14}" y="53" text-anchor="end">再生中</text>'
+                    f'<circle cx="{X + 132}" cy="48" r="2.4" fill="{RED}" />'))
+    art.ink(frame(W, H))
     art.write(OUT, "now-playing")
 
 
@@ -507,6 +576,34 @@ def sfx(font, text, x, y, size, cls, depth=6, rot=-8):
     return f'<g transform="rotate({rot} {x} {y})">{shadow}{body}</g>'
 
 
+def still_hanabi(prefix, spots, rng, mode):
+    """画在天上的花火：用花火的形状，不带升空、闪光和消散的动画。"""
+    defs, body = [], []
+    for i, (x, y, r, kind) in enumerate(spots):
+        g, b = firework(f"{prefix}{i}", kind, x, y, r, SCHEMES[(i * 3 + len(prefix)) % len(SCHEMES)], 6, 0, rng, mode)
+        b = re.sub(r'<circle class="fw-(?:rise|flash)"[^>]*/>', "", b)
+        b = re.sub(r'<g class="fw" style="[^"]*">', "<g>", b).replace(' class="fw-glint"', "")
+        defs.append(g)
+        body.append(b)
+    return "".join(defs), "".join(body)
+
+
+def crackle(spots, rng, mode, period=3.2):
+    """火星：三阵、每阵三格（0.12 秒一格），每格十来颗小四角星落在几朵花的外缘。只靠 <set> 翻页，一个周期只重画九次。"""
+    pal = FW_DAY if mode == "light" else FW_NIGHT
+    hot = ["#ffffff", pal["gold"], pal["silver"]] if mode == "dark" else [pal["gold"], pal["orange"], pal["red"]]
+    rims = [(x, y, r) for x, y, r, kind in spots if kind in ("kiku", "botan", "wa")]
+    out = [clock("cr", period)]
+    for burst, t0 in enumerate((0.3, 1.4, 2.3)):
+        x, y, r = rims[(burst * 2) % len(rims)]
+        pts = [(x + r * rng.uniform(0.75, 1.15) * math.cos(a), y + r * rng.uniform(0.75, 1.15) * math.sin(a))
+               for a in (rng.uniform(0, 2 * math.pi) for _ in range(9))]
+        for f, size in enumerate((1.0, 1.6, 0.8)):
+            stars = "".join(f'<path d="{star(px + rng.uniform(-2, 2), py + rng.uniform(-2, 2), size * rng.uniform(2.2, 3.6))}" fill="{rng.choice(hot)}" />' for px, py in pts)
+            out.append(cel("cr", [(t0 + f * 0.12, 0.12)], stars))
+    return "".join(out)
+
+
 def manga_page(F):
     W, H = 1200, 840
     art = Art(W, H, "第1話 自己紹介 — はじめまして、ユキです。", lean=True)
@@ -522,14 +619,13 @@ def manga_page(F):
     ax = bx(16) - 12
 
     # A：天台的金网、夜空的花火、立绘、对话框、旁白、ザァ…
-    # 一场 12.8 秒的花火：点火时刻（格）、位置、大小、种类、配色。成对的两发同一刻炸开，共用换格的时刻
-    shots = [(0, 572, 206, 252, "kiku", ("gold", "orange", "silver")),
-             (24, 704, 350, 72, "botan", ("pink", "violet", "gold")), (24, 64, 142, 54, "botan", ("cyan", "blue", "silver")),
-             (46, 556, 118, 214, "kamuro", ("gold", "gold", "silver")),
-             (80, 694, 150, 62, "wa", ("green", "cyan", "gold")), (80, 430, 362, 60, "botan", ("orange", "red", "gold")),
-             (100, 616, 248, 236, "kiku", ("cyan", "blue", "silver")), (106, 70, 104, 46, "botan", ("gold", "orange", "silver"))]
-    fl_defs, fl_body, n_frames = hanabi_show("fw", shots, random.Random(5), "light", 160)
-    fd_defs, fd_body, _ = hanabi_show("fw", shots, random.Random(5), "dark", 160)
+    # 夜空里一直开着的花火（静态，彩色），再加一层很轻的“噼啪”：每 3.2 秒有三小阵火星在几朵花的外缘闪一下
+    fw_spots = [(566, 300, 72, "kiku"), (662, 138, 50, "botan"), (330, 66, 58, "kamuro"), (692, 336, 42, "wa"),
+                (404, 226, 38, "botan"), (642, 44, 36, "kiku"), (520, 410, 40, "jelly"), (726, 436, 32, "botan")]
+    fl_defs, fl_body = still_hanabi("pl", fw_spots, random.Random(5), "light")
+    fd_defs, fd_body = still_hanabi("pd", fw_spots, random.Random(5), "dark")
+    fl_body += crackle(fw_spots, random.Random(9), "light")
+    fd_body += crackle(fw_spots, random.Random(9), "dark")
     bubble_d = "M432 60C470 30 560 34 590 92C620 150 606 250 548 282C500 308 446 290 430 246L392 262L418 226C390 170 396 92 432 60Z"
     hello = vtext(HELLO, 530, 102, 22, "hello", 1.5)
     narr = vtext(NARRATION, 754, 52, 17, "narr", 1.75)
@@ -558,13 +654,13 @@ def manga_page(F):
               f'<stop offset="1" stop-color="{TONE_GRAY_SKY}" /></linearGradient></defs>'
               f'<g clip-path="url(#pA)"><rect x="16" y="16" width="{ax}" height="460" fill="{TONE_GRAY_SKY}" />'
               f'<rect x="16" y="16" width="{ax}" height="240" fill="url(#tone)" fill-opacity="0.55" /><rect x="16" y="16" width="{ax}" height="241" fill="url(#skyFade)" />'
-              f'{fl_body}</g>',
+              f'<g opacity="0.85">{fl_body}</g></g>',
               f'<defs>{fd_defs}<linearGradient id="nightSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{night[0]}" /><stop offset="0.55" stop-color="{night[1]}" /><stop offset="1" stop-color="{night[2]}" /></linearGradient>'
               f'<linearGradient id="skyFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{night[0]}" stop-opacity="0" />'
               f'<stop offset="{0.55 / hd:.4f}" stop-color="{night[1]}" stop-opacity="{0.55 / hd:.4f}" /><stop offset="1" stop-color="{mix(night[1], night[2], (hd - 0.55) / 0.45)}" /></linearGradient></defs>'
               f'<g clip-path="url(#pA)"><rect x="16" y="16" width="{ax}" height="460" fill="url(#nightSky)" />'
               f'<rect x="16" y="16" width="{ax}" height="260" fill="url(#tone)" fill-opacity="0.2" /><rect x="16" y="16" width="{ax}" height="261" fill="url(#skyFade)" />'
-              f'{fd_body}</g>')
+              f'<g opacity="0.92">{fd_body}</g></g>')
     art.ink(f'<g clip-path="url(#pA)">{fence("P", 16, ax + 4, 232, 480, [64, 330, 600], 22)}</g>')
     art.color(f'<g clip-path="url(#pA)"><image x="30" y="30" width="331" height="480" href="data:image/webp;base64,{chara}" /></g>')
     art.ink(f'<g clip-path="url(#pA)">'
@@ -605,7 +701,7 @@ def manga_page(F):
     # 分格的框线
     art.ink("".join(f'<polygon points="{pts}" fill="none" stroke="{INK}" stroke-width="3" stroke-linejoin="round" />' for pts in (A, B, C, D)))
     art.write(OUT, "manga")
-    print(f"wrote manga light/dark ({n_frames} firework frames per {160 * TICK:.1f}s)")
+    print("wrote manga light/dark")
 
 
 if __name__ == "__main__":
