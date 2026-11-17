@@ -646,12 +646,24 @@ def sakura_layer(mode, W, X0, X1, SHELF, CY):
     out += [blossom(x, y, sc, rot, mode) for x, y, sc, rot in flowers]
     # 左边陈列架尽头的一小簇
     out += [blossom(X0 + 14, SHELF - 8, 0.9, 15, mode), blossom(X0 + 30, SHELF - 4, 0.7, 50, mode), blossom(X0 + 6, SHELF - 22, 0.6, 35, mode)]
-    # 飘着的花瓣、落在架子上的花瓣
+    # 落在架子上的花瓣（静止）
     col = (X1 - X0) / 6
     for k in range(6):
         gx = X0 + col * (k + 0.5)
-        out.append(petal(gx + col * 0.42, CY - 34 + rng.uniform(-8, 8), 0.75, rng.uniform(0, 360), mode))
         out.append(petal(gx - col * 0.38 + rng.uniform(-6, 6), SHELF - 1.5, 0.7, rng.choice([80, 100, 260, 280]), mode, 0.55))
+    # 从枝头飘下来的花瓣：沿一条左右摇摆的路往左下飘，花瓣顺着飘的方向翻转；八秒一趟，淡入淡出，错开起点。
+    # 用 CSS offset-path + steps，0.08 秒一格（12.5 格/秒），各片的起点也对齐到 0.08 秒，换格的时刻是同一拍
+    prng = random.Random(23)
+    starts = [(W - 60, 66), (W - 112, 72), (W - 150, 68), (W - 32, 92), (W - 190, 64), (W - 86, 80), (W * 0.46, 60)]
+    fill, edge, _ = SAKURA[mode]
+    for k, (x0, y0) in enumerate(starts):
+        dx, amp, cyc, ph = prng.uniform(170, 360), prng.uniform(6, 12), prng.uniform(1.2, 2.0), prng.uniform(0, 6.28)
+        y1 = SHELF - 6 + prng.uniform(-4, 4)
+        pts = [(x0 - dx * t + amp * math.sin(2 * math.pi * cyc * t + ph), y0 + (y1 - y0) * t) for t in (i / 14 for i in range(15))]
+        route = smooth(pts)
+        delay = round(k * 1.12 / 0.08) * 0.08
+        out.append(f'<path d="{PETAL}" class="pf" style="offset-path: path(\'{route}\'); animation-delay: -{delay:.2f}s" '
+                   f'transform="scale(0.8)" fill="{fill}" stroke="{edge}" stroke-width="0.5" />')
     return "".join(out)
 
 
@@ -674,6 +686,14 @@ def trophy():
   .tt {{ font: 700 14px {SERIF_STACK}; fill: {INK}; }}
   .ts {{ font: 400 11px {SERIF_STACK}; fill: {INK}; fill-opacity: 0.65; }}
   .tp {{ font: 700 10.5px {SERIF_STACK}; fill: {INK}; fill-opacity: 0.85; letter-spacing: 0.6px; }}
+  .pf {{ offset-rotate: auto 90deg; opacity: 0; animation: pf 8s infinite; }}
+  @keyframes pf {{
+    0% {{ offset-distance: 0%; opacity: 0; animation-timing-function: steps(10); }}
+    10% {{ offset-distance: 10%; opacity: 1; animation-timing-function: steps(80); }}
+    90% {{ offset-distance: 90%; opacity: 1; animation-timing-function: steps(10); }}
+    100% {{ offset-distance: 100%; opacity: 0; }}
+  }}
+  @media (prefers-reduced-motion: reduce) {{ .pf {{ animation: none; }} }}
 """))
     X0, X1 = PAD, W - PAD
     col = (X1 - X0) / n
@@ -837,23 +857,19 @@ def goldfish_parts(mode):
 
 
 def raindrops(cells, period=8.0, tick=0.04, seed=11):
-    """雨点打在水面：每粒有贡献的墨点每个周期被一滴雨打中一次（时刻随机、对齐到金鱼的 0.04 秒一格），
-    外面依次荡开两圈细环，越来越大、越来越淡。每滴雨就是两只 <circle>，用 <set> 改半径和透明度。"""
+    """雨点打在水面：每粒有贡献的墨点每个周期被一滴雨打中一次（时刻随机，对齐到金鱼的 0.04 秒一格）——
+    打中的一瞬间暗下去，然后一格一格慢慢亮回原来的样子（约 1.2 秒）。墨点各自是一只 <circle>，
+    亮度用一个 calcMode="discrete" 的 <animate> 走完；不跑动画的环境里就是普通的静态墨点。"""
     rng = random.Random(seed)
+    steps = "0.12;0.22;0.34;0.46;0.6;0.74;0.88"
     out = [clock("rn", period)]
-    stages = [(0.0, 1.8, 0.85), (0.12, 4.6, 0.55), (0.24, 7.6, 0.32), (0.36, 10.6, 0.14)]
     for x, y, lv in cells:
         if not lv:
             continue
-        t = round(rng.uniform(0, period - 0.6) / tick) * tick
+        t = round(rng.uniform(0, period - 1.4) / tick) * tick
         r0 = LEVEL_R[min(lv, 4)]
-        for lag in (0.0, 0.12):  # 第二圈晚一格出来
-            rs = ";".join(f"{r0 + dr:.1f}" for _, dr, _ in stages)
-            ops = ";".join(f"{op * (0.7 if lag else 1):.2f}" for _, _, op in stages)
-            b = f"rn.begin+{t + lag:.2f}s"
-            out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="0" fill="none" stroke="{INK}" stroke-width="0.75">'
-                       f'<animate attributeName="r" values="{rs}" calcMode="discrete" begin="{b}" dur="0.48s" />'
-                       f'<animate attributeName="stroke-opacity" values="{ops}" calcMode="discrete" begin="{b}" dur="0.48s" /></circle>')
+        out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r0}" fill="{INK}">'
+                   f'<animate attributeName="fill-opacity" values="{steps}" calcMode="discrete" begin="rn.begin+{t:.2f}s" dur="1.26s" /></circle>')
     return "".join(out)
 
 
@@ -903,7 +919,6 @@ def snake():
     def dot(x, y, r):
         return f"M{x - r:.1f} {y:.1f}a{r} {r} 0 1 0 {2 * r} 0a{r} {r} 0 1 0 {-2 * r} 0z"
     faint = "".join(dot(x, y, LEVEL_R[0]) for x, y, _ in cells)
-    ink_dots = "".join(dot(x, y, LEVEL_R[min(lv, 4)]) for x, y, lv in cells if lv)
     fy = H - 26
     lx = W - PAD - 22
     legend_x = [lx - 14 - 15 * (4 - i) for i in range(5)]
@@ -952,15 +967,14 @@ def snake():
   @media (prefers-reduced-motion: reduce) {{ .go, .fish {{ animation: none; }} }}
 """))
     art.ink(card(W, H) + heading(PAD, HEAD_Y, head_txt, "金魚すくい", bold) + rule(PAD, W - PAD, RULE_Y)
-            + f'<path d="{ink_dots}{legend_d}" fill="{INK}" />'
+            + f'<path d="{legend_d}" fill="{INK}" />' + raindrops(cells)
             + f'<g class="go cv">{cover}</g>'
             + f'<path d="{faint}{legend_f}" fill="{INK}" fill-opacity="0.28" />'
             + "".join(months) + days
             + f'<text class="m" x="{legend_x[0] - 12:.1f}" y="{fy}" text-anchor="end">少</text>'
             f'<text class="m" x="{legend_x[-1] + 12:.1f}" y="{fy}">多</text>'
             f'<text class="s" x="{PAD}" y="{fy}">{foot_txt}</text>'
-            + clock("rp", C) + "".join(ripples)
-            + raindrops(cells))
+            + clock("rp", C) + "".join(ripples))
 
     def fish(mode):
         defs, body, tail, fins, shadow = goldfish_parts(mode)
