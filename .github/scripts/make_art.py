@@ -219,87 +219,70 @@ def title(i, name, english, japanese):
     art.write(OUT, f"title-{name}")
 
 
-# ---------------------------------------------------------------- 分隔线：一根红白的绳，挂满一排御守和风铃
-OMAMORI = [("#d9412b", "#c79a2c"), ("#24396b", "#d9b45a"), ("#f7f4ee", "#d9412b"), ("#6b4c8a", "#e2c46a"),
-           ("#e48aa8", "#ffffff"), ("#1f6b5c", "#e2c46a")]  # 袋子的颜色、绳结和刺绣的颜色
-
-
-def omamori(uid, body, cord, hang):
-    """一只御守（挂点在原点）：一段细绳、花结、上角斜切的布袋、正中一条白色的刺绣签、袋口一道横纹。"""
-    out = "#15171d"
-    y0 = hang
-    return (f'<g id="{uid}"><path d="M0 0V{y0 + 2}" stroke="{cord}" stroke-width="1" />'
-            f'<ellipse cx="-2.6" cy="{y0 + 2.5}" rx="2.8" ry="1.7" fill="none" stroke="{cord}" stroke-width="1.1" />'
-            f'<ellipse cx="2.6" cy="{y0 + 2.5}" rx="2.8" ry="1.7" fill="none" stroke="{cord}" stroke-width="1.1" />'
-            f'<path d="M-7.5 {y0 + 7}L-5.5 {y0 + 5}H5.5L7.5 {y0 + 7}V{y0 + 27}Q7.5 {y0 + 29} 5.5 {y0 + 29}H-5.5Q-7.5 {y0 + 29} -7.5 {y0 + 27}Z" fill="{body}" stroke="{out}" stroke-width="0.8" />'
-            f'<path d="M-7.5 {y0 + 9.5}H7.5" stroke="{cord}" stroke-width="1" stroke-opacity="0.9" />'
-            f'<rect x="-2.4" y="{y0 + 12}" width="4.8" height="13" rx="0.6" fill="#ffffff" fill-opacity="0.92" stroke="{cord}" stroke-width="0.5" />'
-            f'<path d="M0 {y0 + 14.5}v2M0 {y0 + 18.5}v2M0 {y0 + 22}v1.6" stroke="{out}" stroke-width="0.9" stroke-opacity="0.7" /></g>')
-
-
+# ---------------------------------------------------------------- 分隔线：一根笔直的长绳，密密挂满抽象的御守、风铃和铃铛（静态，墨·纸·朱）
 def divider():
-    """一根垂下来的红白绳（花火大会、神社那种），等距挂着御守和风铃。每 6.4 秒吹过一阵风：从左到右一只接一只地摆几下，
-    然后又静下来。所有挂件在 <defs> 里只画一次，每一格只是一组 <use> 换角度（<set> 翻页），静止的几秒里浏览器什么都不做。"""
-    W, H = 800, 108
-    x0, x1, top, sag = 18, W - 18, 12, 20
+    """笔直的一根绳（短斜线表示绞股），下面密密地挂着三种抽象的小物：御守（斜切的方袋 + 花结）、风铃（半圆的钟 + 短册）、铃铛（圆 + 一道缝）。
+    只有墨、纸、朱三色：墨层在深色版里自动反相，朱色换夜间红，所以浅深两版都干净。完全静态。"""
+    W, H = 900, 62
+    x0, x1, top = 8, W - 8, 10
     art = Art(W, H, role="presentation", lean=True)
+    sw = 'stroke-linejoin="round" stroke-linecap="round"'
 
-    def rope_pt(t):
-        mx, my = (x0 + x1) / 2, top + sag * 2
-        u = 1 - t
-        return u * u * x0 + 2 * u * t * mx + t * t * x1, u * u * top + 2 * u * t * my + t * t * top
-    items = []  # (类型, t, 吊绳长度)
-    n = 29  # 挂得满满的：相邻两只一高一低错开，远看连成一整排
-    for i in range(n):
-        t = 0.035 + 0.93 * i / (n - 1)
-        hang = (3 if i % 2 == 0 else 15) + (i % 3) * 2
-        items.append(("fu" if i % 4 in (1, 3) and i % 8 != 5 else "om", t, hang))
-    period, t0, pose_dur, lag = 6.4, 1.2, 0.16, 0.035
-    swing = [9, -6.5, 4.5, -3, 1.6, -0.6]  # 一阵风里每只挂件依次摆到的角度
+    def omamori(fill, label, hang):
+        y = hang
+        return (f'<path d="M0 0V{y + 1}" stroke="{INK}" stroke-width="0.7" />'
+                f'<path d="M-2.2 {y + 1.6}a2 1.3 0 1 1 2.2 0a2 1.3 0 1 1 2.2 0" fill="none" stroke="{INK}" stroke-width="0.8" />'
+                f'<path d="M-5 {y + 5}L-3.5 {y + 3.5}H3.5L5 {y + 5}V{y + 19}Q5 {y + 20.5} 3.5 {y + 20.5}H-3.5Q-5 {y + 20.5} -5 {y + 19}Z" fill="{fill}" stroke="{INK}" stroke-width="0.9" {sw} />'
+                f'<path d="M-5 {y + 6.8}H5" stroke="{label}" stroke-width="0.7" />'
+                f'<rect x="-1.5" y="{y + 9}" width="3" height="8.6" rx="0.4" fill="none" stroke="{label}" stroke-width="0.7" />')
+
+    def furin(strip, hang):
+        y = hang
+        return (f'<path d="M0 0V{y}" stroke="{INK}" stroke-width="0.7" />'
+                f'<path d="M-6 {y + 8}C-6 {y + 2.5} -3.4 {y} 0 {y}C3.4 {y} 6 {y + 2.5} 6 {y + 8}Z" fill="{PAPER}" stroke="{INK}" stroke-width="0.9" {sw} />'
+                f'<path d="M-6.4 {y + 8}H6.4" stroke="{INK}" stroke-width="1" stroke-linecap="round" />'
+                f'<path d="M0 {y + 4}V{y + 12.5}" stroke="{INK}" stroke-width="0.6" />'
+                f'<rect x="-1.7" y="{y + 12.5}" width="3.4" height="10" fill="{strip}" stroke="{INK}" stroke-width="0.6" />')
+
+    def suzu(fill, hang):
+        y = hang
+        return (f'<path d="M0 0V{y}" stroke="{INK}" stroke-width="0.7" />'
+                f'<circle cx="0" cy="{y + 4.6}" r="4.6" fill="{fill}" stroke="{INK}" stroke-width="0.9" />'
+                f'<path d="M-4.4 {y + 4}H4.4" stroke="{PAPER if fill == INK else INK}" stroke-width="0.6" />'
+                f'<path d="M0 {y + 6}V{y + 9}" stroke="{PAPER if fill == INK else INK}" stroke-width="1" stroke-linecap="round" />')
+    # 绳：一道墨线，上面一排短斜线表示绞股；两端各一个朱色的结和短穗
+    rope = (f'<path d="M{x0} {top}H{x1}" stroke="{INK}" stroke-width="1.6" />'
+            + f'<path d="{"".join(f"M{x:.1f} {top - 1.6}l2 3.2" for x in range(x0 + 4, x1 - 4, 4))}" stroke="{PAPER}" stroke-width="0.6" />'
+            + "".join(f'<circle cx="{x}" cy="{top}" r="2.6" fill="{RED}" /><path d="M{x - 1.2} {top + 2}v9M{x} {top + 2}v11M{x + 1.2} {top + 2}v9" stroke="{RED}" stroke-width="0.7" />' for x in (x0, x1)))
+    # 一排小物：间距 15，前后一高一低错开；朱色只给一小部分做点缀
+    kinds = ["om", "fu", "su", "om", "fu", "om", "su", "fu"]
+    pitch = 15
+    xs = [x for x in range(x0 + 20, x1 - 16, pitch)]
+    defs, uses = {}, []
+    for i, x in enumerate(xs):
+        kind = kinds[i % len(kinds)]
+        hang = 3 if i % 2 == 0 else 13
+        accent = i % 7 == 3
+        if kind == "om":
+            fill, label = ((RED, PAPER) if accent else (INK, PAPER) if i % 3 == 0 else (PAPER, INK))
+            key = f"om_{fill}_{hang}"
+            defs.setdefault(key, omamori(fill, label, hang))
+        elif kind == "fu":
+            strip = RED if accent or i % 5 == 0 else PAPER
+            key = f"fu_{strip}_{hang}"
+            defs.setdefault(key, furin(strip, hang))
+        else:
+            fill = RED if accent else (INK if i % 4 == 2 else PAPER)
+            key = f"su_{fill}_{hang}"
+            defs.setdefault(key, suzu(fill, hang))
+        uses.append((key, x))
+    ids = {k: f"d{n}" for n, k in enumerate(defs)}
 
     def body(mode):
-        red = RED if mode == "light" else NIGHT_RED
-        ink = INK if mode == "light" else NIGHT_INK
-        defs = []
-        for k, (body_c, cord) in enumerate(OMAMORI):
-            for hang in sorted({h for kind, _, h in items if kind == "om"}):
-                defs.append(omamori(f"om{k}_{hang}", body_c, cord, hang))
-        for hang in sorted({h for kind, _, h in items if kind == "fu"}):
-            for tilt_k, paper in ((0, 0.0), (1, 12.0), (2, -9.0)):
-                fi, fc = furin(0, hang, 0.6, 0, paper, red)
-                fi = fi if mode == "light" else to_night(fi)
-                defs.append(f'<g id="fu{hang}_{tilt_k}"><path d="M0 0V{hang}" stroke="{ink}" stroke-width="0.8" />{fi}{fc}</g>')
-        a, b = rope_pt(0.5)
-        rope_d = f"M{x0} {top}Q{(x0 + x1) / 2} {top + sag * 2} {x1} {top}"
-        rope = (f'<path d="{rope_d}" fill="none" stroke="{red}" stroke-width="2.4" stroke-linecap="round" />'
-                f'<path d="{rope_d}" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-dasharray="2.4 2.4" stroke-opacity="0.9" />'
-                + "".join(f'<path d="M{x} {top}c-2 6 -3 14 -2 22M{x} {top}c0 7 0 15 0 24M{x} {top}c2 6 3 14 2 22" stroke="#c79a2c" stroke-width="1" fill="none" stroke-linecap="round" />'
-                          f'<circle cx="{x}" cy="{top}" r="3" fill="{red}" />' for x in (x0, x1)))
-
-        def pose(angles):
-            out = []
-            for i, (kind, t, hang) in enumerate(items):
-                px, py = rope_pt(t)
-                a = angles[i]
-                if kind == "om":
-                    ref = f"om{(i * 5 // 3) % len(OMAMORI)}_{hang}"
-                else:
-                    ref = f"fu{hang}_{0 if abs(a) < 1 else (1 if a > 0 else 2)}"
-                out.append(f'<use href="#{ref}" transform="translate({px:.1f} {py:.1f}) rotate({a:.1f})" />')
-            return "".join(out)
-        frames, k = [], 0
-        end = t0 + lag * (n - 1) + pose_dur * len(swing)
-        tick = 0.08
-        while t0 + k * tick < end:
-            tt = t0 + k * tick
-            angles = []
-            for i in range(n):
-                j = int((tt - t0 - lag * i) // pose_dur)
-                angles.append(swing[j] * (1.25 if items[i][0] == "fu" else 1) if 0 <= j < len(swing) else 0)
-            frames.append(cel("dv", [(tt, tick)], pose(angles)))
-            k += 1
-        rest = f'<g>{pose([0] * n)}<set attributeName="visibility" to="hidden" begin="dv.begin+{t0:.2f}s" dur="{k * tick:.2f}s" /></g>'
-        return f'<defs>{"".join(defs)}</defs>' + rope + clock("dv", period) + rest + "".join(frames)
+        conv = (lambda t: t) if mode == "light" else (lambda t: to_night(t).replace(RED, NIGHT_RED))
+        d = "".join(f'<g id="{ids[k]}">{conv(v)}</g>' for k, v in defs.items())
+        return (f'<defs>{d}</defs>' + conv(rope)
+                + "".join(f'<use href="#{ids[k]}" x="{x}" y="{top}" />' for k, x in uses))
     art.color(body("light"), body("dark"))
     art.write(OUT, "divider")
 
@@ -401,29 +384,32 @@ def now_playing():
     art.ink(f'<g clip-path="url(#inside)">{"".join(fi)}</g>')
     art.color(*both(f'<g clip-path="url(#inside)">{"".join(fc)}</g>'))
 
-    # ---- 声波：横贯底部，网点填充的波形 + 一粗一细两根墨线 + 一根朱线 ----
+    # ---- 声波：横贯底部的一条“丝带”——七根细线相位依次错开，拧成一股，正中一根略粗；一根朱线以别的频率穿过去。两端用渐变描边淡出 ----
     F, FRAME = 20, 0.08
-    X0, X1, CY = 12, W - 12, 250
+    X0, X1, CY = 12, W - 12, 248
+    art.defs.append(f'<linearGradient id="wvInk" gradientUnits="userSpaceOnUse" x1="{X0}" x2="{X1}" y1="0" y2="0"><stop offset="0" stop-color="{INK}" stop-opacity="0" />'
+                    f'<stop offset="0.14" stop-color="{INK}" /><stop offset="0.86" stop-color="{INK}" /><stop offset="1" stop-color="{INK}" stop-opacity="0" /></linearGradient>')
+    red_grad = (f'<linearGradient id="wvRed" gradientUnits="userSpaceOnUse" x1="{X0}" x2="{X1}" y1="0" y2="0"><stop offset="0" stop-color="{RED}" stop-opacity="0" />'
+                f'<stop offset="0.2" stop-color="{RED}" /><stop offset="0.8" stop-color="{RED}" /><stop offset="1" stop-color="{RED}" stop-opacity="0" /></linearGradient>')
 
-    def env(x, beat, ph):
+    def env(x, beat):
         u = (x - X0) / (X1 - X0)
-        return math.sin(math.pi * u) ** 1.6 * (0.72 + 0.28 * math.sin(3 * math.pi * u - ph)) * beat
+        return math.sin(math.pi * u) ** 1.3 * beat
+    strands = [(-3, 0.55, 0.22), (-2, 0.65, 0.34), (-1, 0.75, 0.5), (0, 1.5, 1.0), (1, 0.75, 0.5), (2, 0.65, 0.34), (3, 0.55, 0.22)]
     ink_frames, red_frames = [], []
-    for f in range(F + 1):
-        ph = 2 * math.pi * (f % F) / F
-        beat = 0.82 + 0.18 * abs(math.sin(2 * ph))
-        main = qwave(2 * math.pi / 92, lambda x: 24 * env(x, beat, ph), -ph, CY, X0, X1)
-        echo = qwave(2 * math.pi / 58, lambda x: 15 * env(x, beat, ph + 1), 2 * ph + 1, CY, X0, X1)
-        accent = qwave(2 * math.pi / 130, lambda x: 18 * env(x, beat, ph + 2), -ph + 2, CY, X0, X1)
-        upper = wave_d(main, CY)
-        lower = "".join(f"Q{m:.1f} {CY + 2 * h:.1f} {a:.1f} {CY}" for (m, h, _), a in zip(reversed(main), [s[2] for s in reversed(main[:-1])] + [main[0][0] - (main[0][2] - main[0][0])]))
-        ink_frames.append(f'<path d="{upper}{lower}Z" fill="url(#toneFine)" fill-opacity="0.75" />'
-                          f'<path d="{upper}" fill="none" stroke="{INK}" stroke-width="2.2" stroke-linecap="round" />'
-                          f'<path d="{wave_d(echo, CY)}" fill="none" stroke="{INK}" stroke-width="1" stroke-opacity="0.5" />')
-        red_frames.append(f'<path d="{wave_d(accent, CY)}" fill="none" stroke="{RED}" stroke-width="1.5" stroke-linecap="round" />')
-    art.ink(f'<g clip-path="url(#inside)"><path d="M{X0} {CY}H{X1}" stroke="{INK}" stroke-width="0.6" stroke-opacity="0.4" />'
-            + clock("w", F * FRAME) + poster(ink_frames[3]) + "".join(cel("w", [(f * FRAME, FRAME)], ink_frames[f]) for f in range(F)) + "</g>")
-    art.color(*both(f'<g clip-path="url(#inside)">' + poster(red_frames[3]) + "".join(cel("w", [(f * FRAME, FRAME)], red_frames[f]) for f in range(F)) + "</g>"))
+    for f in range(F):
+        ph = 2 * math.pi * f / F
+        beat = 0.86 + 0.14 * math.sin(2 * ph)
+        lines = []
+        for j, w, op in strands:
+            segs = qwave(2 * math.pi / 104, lambda x, j=j: (19 - 1.6 * abs(j)) * env(x, beat), -ph + 0.32 * j, CY, X0, X1)
+            lines.append(f'<path d="{wave_d(segs, CY)}" stroke-width="{w}" stroke-opacity="{op}" />')
+        ink_frames.append(f'<g fill="none" stroke="url(#wvInk)" stroke-linecap="round">{"".join(lines)}</g>')
+        accent = qwave(2 * math.pi / 156, lambda x: 15 * env(x, beat), ph + 1.4, CY, X0, X1)
+        red_frames.append(f'<path d="{wave_d(accent, CY)}" fill="none" stroke="url(#wvRed)" stroke-width="1.1" stroke-linecap="round" />')
+    art.ink(f'<g clip-path="url(#inside)">' + clock("w", F * FRAME) + poster(ink_frames[3]) + "".join(cel("w", [(f * FRAME, FRAME)], ink_frames[f]) for f in range(F)) + "</g>")
+    reds = f'<defs>{red_grad}</defs><g clip-path="url(#inside)">' + poster(red_frames[3]) + "".join(cel("w", [(f * FRAME, FRAME)], red_frames[f]) for f in range(F)) + "</g>"
+    art.color(reds, reds.replace(RED, NIGHT_RED))
 
     # ---- 拍立得：封面，纸胶带贴着，微微歪着 ----
     PX, PY, PW, PH, PI = 62, 34, 196, 230, 12

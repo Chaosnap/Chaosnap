@@ -25,7 +25,7 @@
   <img src="https://hits.sh/github.com/Chaosnap.svg?style=for-the-badge&label=Visitors&extraCount=569&color=e5383b&labelColor=15171d&logo=github&logoColor=white" alt="访客统计" />
 </p>
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="70%" alt="" /></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="100%" alt="" /></picture></p>
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-achievements-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-achievements-light.svg" width="80%" alt="Achievements" /></picture></p>
 
@@ -43,7 +43,7 @@
   <a href="https://github.com/Chaosnap/Yohaku"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/pin-yohaku-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/pin-yohaku-light.svg" width="49%" alt="Yohaku" /></picture></a>
 </p>
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="70%" alt="" /></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="100%" alt="" /></picture></p>
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-stats-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-stats-light.svg" width="80%" alt="GitHub Stats" /></picture></p>
 
@@ -58,14 +58,14 @@
   <picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/activity-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/activity-light.svg" width="100%" alt="Activity Graph" /></picture>
 </p>
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="70%" alt="" /></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="100%" alt="" /></picture></p>
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-playing-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-playing-light.svg" width="80%" alt="Now Playing" /></picture></p>
 
 <!-- 播放卡：夏天的漫画分格，拍立得封面 + 会动的声波（profile/images/cover.jpg 是封面） -->
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/now-playing-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/now-playing-light.svg" width="100%" alt="Now playing: Yorushika - Hitchcock" /></picture></p>
 
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="70%" alt="" /></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="100%" alt="" /></picture></p>
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-tech-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-tech-light.svg" width="80%" alt="Tech Stack" /></picture></p>
 
