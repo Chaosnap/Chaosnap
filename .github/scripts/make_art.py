@@ -25,7 +25,7 @@ from manga import (EASE, EASE_OUT, GRAY, INK, MINCHO, MINCHO_STACK, NIGHT_INK, N
 
 from decorate import HEAD_Y, RULE_Y, SEAL, both, heading, rule, seal, sheet  # noqa: E402
 from decorate import card as shadow_card  # noqa: E402
-from manga import FW_DAY, FW_NIGHT, NIGHT_PAPER, SCHEMES, TITLE_CSS, firework, hanabi_show, music_note, star, to_night  # noqa: E402
+from manga import FW_DAY, FW_NIGHT, NIGHT_PAPER, SCHEMES, TITLE_CSS, firework, hanabi_still, music_note, star, to_night  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 OUT = ROOT / "profile"
@@ -645,11 +645,15 @@ def manga_page(F):
     # 夜空的花火：一发发升空、炸开、盛开，再化成灰烬飘落（见 hanabi_cycle）
     fw_spots = [(566, 300, 72, "kiku"), (662, 138, 50, "botan"), (330, 66, 58, "kamuro"), (692, 336, 42, "wa"),
                 (404, 226, 38, "botan"), (642, 44, 36, "kiku"), (520, 410, 40, "jelly"), (726, 436, 32, "botan")]
-    # 一场花火大会：约 9 秒一轮、二十多发，常常两发一起上；菊（拖尾）、牡丹（亮点、末尾噼啪）、冠菊（金色垂柳）、輪，大小交错，铺满整片夜空。
-    # 用 manga.hanabi_show：弹道 + 阻力 + 重力、光晕、炸开的闪光、拖尾、芯、噼啪；对称的部分用 <use> 转出来，文件不至于太大。
+    # 花火大会（manga.hanabi_show 那一场）里的一格定格：弹道拖尾、光晕、芯、噼啪都在，但整张图是静态的。
+    # 2026-11-17 Yuki 挑中的那一刻（第 86～87 格，约 6.9 秒），改成定格：紫色牡丹在头顶开着、金色冠菊在对话框后面垂下来；
+    # 旁白框旁边那发菊原本刚炸开，按 Yuki 的意思让它开出来，改成绣球花那样的一团蓝白。
     shots = festival_shots(random.Random(31), period=112)
-    fl_defs, fl_body, _ = hanabi_show("fwl", shots, random.Random(5), "light", 112)
-    fd_defs, fd_body, n_frames = hanabi_show("fwd", shots, random.Random(5), "dark", 112)
+    # 最右边那发改成蓝白色、定在绽开成花的那一霎那（炸开后第 6 格）：一道道拖尾像花瓣一样散开、外缘还是圆满的，像一朵盛开的菊。
+    burst = next(j for j, sh in enumerate(shots) if sh[:4] == (81, 664, 238, 137))
+    shots[burst] = shots[burst][:5] + (("cyan", "blue", "silver"),)
+    fl_defs, fl_body = hanabi_still("fwl", shots, random.Random(5), "light", 112, 86, {burst: 6 + 6})
+    fd_defs, fd_body = hanabi_still("fwd", shots, random.Random(5), "dark", 112, 86, {burst: 6 + 6})
     bubble_d = "M432 60C470 30 560 34 590 92C620 150 606 250 548 282C500 308 446 290 430 246L392 262L418 226C390 170 396 92 432 60Z"
     hello = vtext(HELLO, 530, 102, 22, "hello", 1.5)
     narr = vtext(NARRATION, 754, 52, 17, "narr", 1.75)
@@ -725,7 +729,7 @@ def manga_page(F):
     # 分格的框线
     art.ink("".join(f'<polygon points="{pts}" fill="none" stroke="{INK}" stroke-width="3" stroke-linejoin="round" />' for pts in (A, B, C, D)))
     art.write(OUT, "manga")
-    print(f"wrote manga light/dark ({len(shots)} shells, {n_frames} frames per {112 * TICK:.2f}s)")
+    print("wrote manga light/dark (fireworks frozen at tick 86)")
 
 
 if __name__ == "__main__":

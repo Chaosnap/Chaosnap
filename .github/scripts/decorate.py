@@ -609,64 +609,6 @@ def cup(cx, cy, rank, secret):
     return "".join(under), "".join(ink), ""
 
 
-PETAL = "M0 0C-3.6 -2.6 -4.6 -7.4 -2.3 -10.2L0 -8.6L2.3 -10.2C4.6 -7.4 3.6 -2.6 0 0Z"  # 一片樱花瓣：尖上一道小缺口
-SAKURA = {"light": (RED, "#a8231f", "#ffffff"), "dark": (NIGHT_RED, "#c23a3e", "#ffffff")}  # 花瓣用页面上现有的朱红，花心、花蕊留白
-
-
-def blossom(x, y, s, rot, mode):
-    """一朵樱花：五片带缺口的花瓣、深一点的花心和一圈花蕊。"""
-    fill, edge, core = SAKURA[mode]
-    petals = "".join(f'<path d="{PETAL}" transform="rotate({rot + 72 * k:.0f})" />' for k in range(5))
-    stamens = "".join(f'<circle cx="{3.4 * math.cos(math.radians(rot + 36 + 72 * k)):.1f}" cy="{3.4 * math.sin(math.radians(rot + 36 + 72 * k)):.1f}" r="0.55" />' for k in range(5))
-    return (f'<g transform="translate({x:.1f} {y:.1f}) scale({s})"><g fill="{fill}" stroke="{edge}" stroke-width="0.5" stroke-linejoin="round">{petals}</g>'
-            f'<circle r="1.7" fill="{core}" fill-opacity="0.9" /><g fill="{core}">{stamens}</g></g>')
-
-
-def petal(x, y, s, rot, mode, flat=1.0):
-    fill, edge, _ = SAKURA[mode]
-    return f'<path d="{PETAL}" transform="translate({x:.1f} {y:.1f}) rotate({rot:.0f}) scale({s} {s * flat:.2f})" fill="{fill}" stroke="{edge}" stroke-width="0.5" />'
-
-
-def sakura_layer(mode, W, X0, X1, SHELF, CY):
-    """奖杯柜旁的樱花：右上角伸进来一枝（墨色枝干、几簇花和花苞），左边陈列架尽头一小簇，几片花瓣飘在杯子之间、落在架子上。静态。"""
-    rng = random.Random(17)
-    ink = INK if mode == "light" else NIGHT_INK
-    fill, edge, core = SAKURA[mode]
-    # 枝干贴着标题线下面从右边伸进来，不压到杯子；最右边垂下一小枝，落在最后一只杯子右边的空处
-    branch = (f'<path d="M{W - 4} 63C{W - 40} 66 {W - 80} 70 {W - 120} 71C{W - 140} 71.5 {W - 160} 69 {W - 182} 66" fill="none" stroke="{ink}" stroke-width="2.6" stroke-linecap="round" />'
-              f'<path d="M{W - 120} 71C{W - 132} 76 {W - 146} 78 {W - 158} 78" fill="none" stroke="{ink}" stroke-width="1.2" stroke-linecap="round" />'
-              f'<path d="M{W - 34} 65C{W - 30} 80 {W - 32} 96 {W - 40} 112" fill="none" stroke="{ink}" stroke-width="1.4" stroke-linecap="round" />'
-              f'<path d="M{W - 70} 68C{W - 74} 62 {W - 80} 59 {W - 88} 58" fill="none" stroke="{ink}" stroke-width="1" stroke-linecap="round" />')
-    flowers = [(W - 182, 66, 0.8, 10), (W - 150, 70, 0.95, 40), (W - 112, 70, 0.85, 70), (W - 158, 79, 0.65, 20), (W - 62, 66, 0.9, 55),
-               (W - 33, 84, 0.8, 30), (W - 38, 103, 0.75, 5), (W - 42, 118, 0.6, 60), (W - 12, 64, 0.7, 25)]
-    buds = [(W - 196, 63), (W - 90, 59), (W - 28, 96), (W - 128, 75)]
-    out = [branch]
-    out += [f'<ellipse cx="{x}" cy="{y}" rx="2.2" ry="3" transform="rotate(-30 {x} {y})" fill="{fill}" stroke="{edge}" stroke-width="0.5" />'
-            f'<path d="M{x + 1} {y + 2.4}l1.4 2.2" stroke="{ink}" stroke-width="0.7" />' for x, y in buds]
-    out += [blossom(x, y, sc, rot, mode) for x, y, sc, rot in flowers]
-    # 左边陈列架尽头的一小簇
-    out += [blossom(X0 + 14, SHELF - 8, 0.9, 15, mode), blossom(X0 + 30, SHELF - 4, 0.7, 50, mode), blossom(X0 + 6, SHELF - 22, 0.6, 35, mode)]
-    # 落在架子上的花瓣（静止）
-    col = (X1 - X0) / 6
-    for k in range(6):
-        gx = X0 + col * (k + 0.5)
-        out.append(petal(gx - col * 0.38 + rng.uniform(-6, 6), SHELF - 1.5, 0.7, rng.choice([80, 100, 260, 280]), mode, 0.55))
-    # 从枝头飘下来的花瓣：沿一条左右摇摆的路往左下飘，花瓣顺着飘的方向翻转；八秒一趟，淡入淡出，错开起点。
-    # 用 CSS offset-path + steps，0.08 秒一格（12.5 格/秒），各片的起点也对齐到 0.08 秒，换格的时刻是同一拍
-    prng = random.Random(23)
-    starts = [(W - 60, 66), (W - 112, 72), (W - 150, 68), (W - 32, 92), (W - 190, 64), (W - 86, 80), (W * 0.46, 60)]
-    fill, edge, _ = SAKURA[mode]
-    for k, (x0, y0) in enumerate(starts):
-        dx, amp, cyc, ph = prng.uniform(170, 360), prng.uniform(6, 12), prng.uniform(1.2, 2.0), prng.uniform(0, 6.28)
-        y1 = SHELF - 6 + prng.uniform(-4, 4)
-        pts = [(x0 - dx * t + amp * math.sin(2 * math.pi * cyc * t + ph), y0 + (y1 - y0) * t) for t in (i / 14 for i in range(15))]
-        route = smooth(pts)
-        delay = round(k * 1.12 / 0.08) * 0.08
-        out.append(f'<path d="{PETAL}" class="pf" style="offset-path: path(\'{route}\'); animation-delay: -{delay:.2f}s" '
-                   f'transform="scale(0.8)" fill="{fill}" stroke="{edge}" stroke-width="0.5" />')
-    return "".join(out)
-
-
 def trophy():
     svg = read("trophy")
     if not svg:
@@ -686,14 +628,6 @@ def trophy():
   .tt {{ font: 700 14px {SERIF_STACK}; fill: {INK}; }}
   .ts {{ font: 400 11px {SERIF_STACK}; fill: {INK}; fill-opacity: 0.65; }}
   .tp {{ font: 700 10.5px {SERIF_STACK}; fill: {INK}; fill-opacity: 0.85; letter-spacing: 0.6px; }}
-  .pf {{ offset-rotate: auto 90deg; opacity: 0; animation: pf 8s infinite; }}
-  @keyframes pf {{
-    0% {{ offset-distance: 0%; opacity: 0; animation-timing-function: steps(10); }}
-    10% {{ offset-distance: 10%; opacity: 1; animation-timing-function: steps(80); }}
-    90% {{ offset-distance: 90%; opacity: 1; animation-timing-function: steps(10); }}
-    100% {{ offset-distance: 100%; opacity: 0; }}
-  }}
-  @media (prefers-reduced-motion: reduce) {{ .pf {{ animation: none; }} }}
 """))
     X0, X1 = PAD, W - PAD
     col = (X1 - X0) / n
@@ -724,7 +658,6 @@ def trophy():
             shine.append(cel("k", [(0.8 + k * 0.72 + at, dur)],
                              f'<path d="{star(sx, sy, rr)}" fill="{RED if red else INK}" />' + (f'<path d="{star(sx + 8, sy + 9, rr * 0.42)}" fill="{RED if red else INK}" />' if rr > 6 else "")))
     art.ink(ink[0])  # 卡片底先铺
-    art.color(sakura_layer("light", W, X0, X1, SHELF, CY), sakura_layer("dark", W, X0, X1, SHELF, CY))  # 樱花在杯子后面
     art.ink("".join(ink[1:]))
     ink_shine = "".join(s for s in shine if RED not in s)
     red_shine = "".join(s for s in shine[1:] if RED in s)

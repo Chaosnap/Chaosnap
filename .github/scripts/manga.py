@@ -1244,9 +1244,8 @@ def _hn_frame(fw, age, mode, fid):
     return f'<g transform="translate({x} {y + (0 if kind == "kamuro" else drop):.0f})">{once}{copies}</g>'
 
 
-def hanabi_show(uid, shots, rng, mode, period):
-    """一场花火。shots = [(点火时刻（格）, x, y, R, kind, (主色, 变色, 芯色))]，颜色是 FW_DAY / FW_NIGHT 里的名字；period 是整场循环的格数。
-    返回 (defs, svg, 格数)：svg 里是主时钟、每一格的画面，以及不跑动画时显示的定格。"""
+def _hn_prepare(shots, rng, mode):
+    """把每一发花火的星点方向、芯、颜色、光晕都准备好。"""
     pal = FW_DAY if mode == "light" else FW_NIGHT
     fws, glows = [], {}
     for j, (t0, x, y, R, kind, names) in enumerate(shots):
@@ -1284,6 +1283,13 @@ def hanabi_show(uid, shots, rng, mode, period):
                     "rise": min(230, R * 1.5 + 60), "seed": j * 1.3, "life": life, "lead": HN_RISE if rocket else 0, "glow": glows[cols[0]],
                     "hw": max(3.4, min(6.4, R / 34 + 1.7)) * (1.3 if kind in ("botan", "wa") else 1)})
 
+    return pal, fws, glows
+
+
+def hanabi_show(uid, shots, rng, mode, period):
+    """一场花火。shots = [(点火时刻（格）, x, y, R, kind, (主色, 变色, 芯色))]，颜色是 FW_DAY / FW_NIGHT 里的名字；period 是整场循环的格数。
+    返回 (defs, svg, 格数)：svg 里是主时钟、每一格的画面，以及不跑动画时显示的定格。"""
+    pal, fws, glows = _hn_prepare(shots, rng, mode)
     def ages(fw):  # 这一发自己要换画面的时刻（从点火算起）
         return list(range(0, fw["lead"], 2)) + [fw["lead"] + a for a in HN_AGES if a <= fw["life"]]
     marks = set()
@@ -1309,6 +1315,22 @@ def hanabi_show(uid, shots, rng, mode, period):
                       f'<stop offset="1" stop-color="{c}" stop-opacity="0" /></radialGradient>' for c, gid in glows.items()))
     still = "".join(_hn_frame(fw, fw["lead"] + int(fw["life"] * 0.42), mode, f"{uid}p{j}") for j, fw in enumerate(fws) if j % 2 == 0)
     return defs, clock(uid, period * TICK) + poster(still) + "".join(cels), len(cels)
+
+
+def hanabi_still(uid, shots, rng, mode, period, tick, ages=None):
+    """一场花火在第 tick 格时的定格画面（静态，没有任何动画）。ages = {第几发: 从点火算起的格数} 可以单独让某几发开得更大/更小。"""
+    pal, fws, glows = _hn_prepare(shots, rng, mode)
+    ages = ages or {}
+    body = []
+    for j, fw in enumerate(fws):
+        age = ages.get(j, (tick - fw["t0"]) % period)
+        if age <= fw["lead"] + fw["life"]:
+            body.append(_hn_frame(fw, age, mode, f"{uid}s{j}"))
+    defs = (f'<radialGradient id="hnFlash"><stop offset="0" stop-color="#ffffff" /><stop offset="0.4" stop-color="{pal["gold"]}" stop-opacity="0.45" />'
+            f'<stop offset="1" stop-color="{pal["gold"]}" stop-opacity="0" /></radialGradient>'
+            + "".join(f'<radialGradient id="{gid}"><stop offset="0" stop-color="{c}" stop-opacity="0.7" /><stop offset="0.45" stop-color="{c}" stop-opacity="0.3" />'
+                      f'<stop offset="1" stop-color="{c}" stop-opacity="0" /></radialGradient>' for c, gid in glows.items()))
+    return defs, "".join(body)
 
 
 # ---------------------------------------------------------------- 小风铃（分隔线用）
