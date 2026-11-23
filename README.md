@@ -47,10 +47,10 @@
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-stats-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/title-stats-light.svg" width="80%" alt="GitHub Stats" /></picture></p>
 
-<!-- GitHub statistics 统计信息 + 常用语言：两张卡同高、宽度比 595:395 正好等于 59.5%:39.5%，再加 align="top"，上边一定对齐 -->
+<!-- GitHub statistics 统计信息 + 常用语言：两张卡同高、宽度比 590:390 正好等于 59%:39%（共 98%，手机上也放得下一行），再加 align="top"，上边一定对齐 -->
 <p align="center">
-  <a href="https://github.com/Chaosnap"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/stats-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/stats-light.svg" width="59.5%" align="top" alt="GitHub Statistics" /></picture></a>
-  <a href="https://github.com/Chaosnap?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/top-langs-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/top-langs-light.svg" width="39.5%" align="top" alt="Top Languages" /></picture></a>
+  <a href="https://github.com/Chaosnap"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/stats-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/stats-light.svg" width="59%" align="top" alt="GitHub Statistics" /></picture></a>
+  <a href="https://github.com/Chaosnap?tab=repositories"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/top-langs-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/top-langs-light.svg" width="39%" align="top" alt="Top Languages" /></picture></a>
 </p>
 
 <!-- GitHub 活动统计图，由 PersonalStatus.yml 下载，decorate.py 读出数据后重画 -->

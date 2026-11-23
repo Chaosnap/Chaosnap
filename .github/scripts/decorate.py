@@ -253,8 +253,9 @@ INTRO_CSS = """  .draw { stroke-dasharray: 1 1; animation: draw 1.6s 0.2s cubic-
   @media (prefers-reduced-motion: reduce) { .draw, .fade, .grow { animation: none; } }
 """
 
-# 统计卡和语言卡并排：宽度比 595 : 395 正好等于 README 里的 59.5% : 39.5%，同一个高度，渲染出来上下边都对齐
-STATS_W, LANGS_W = 595, 395
+# 统计卡和语言卡并排：宽度比 590 : 390 正好等于 README 里的 59% : 39%，同一个高度，渲染出来上下边都对齐。
+# 两张加起来只占 98%，留 2% 给两张图之间的空格——手机上页面窄，99% 加一个空格就放不下，第二张会掉到下一行
+STATS_W, LANGS_W = 590, 390
 
 
 def stats_height(st, lg):
