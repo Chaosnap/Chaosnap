@@ -7,22 +7,22 @@
 <!-- 世界线台词条（替代原来的打字机） -->
 <p align="center"><a href="https://me-rose-mu.vercel.app/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/quote-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/quote-light.svg" width="80%" alt="Initializing World Line 1.048596 ... El Psy Kongroo." /></picture></a></p>
 
-<!-- profile logo 个人资料徽标 -->
+<!-- profile logo 个人资料徽标：浅色主题是纸色底、墨色字，深色主题是墨色底、白字 -->
 <p align="center">
-  <a href="https://me-rose-mu.vercel.app/"><img src="https://img.shields.io/badge/Blog-15171D?style=for-the-badge&logo=githubpages&logoColor=white" alt="Blog" /></a>
-  <a href="https://twitter.com/WalesHua/"><img src="https://img.shields.io/badge/Twitter-15171D?style=for-the-badge&logo=x&logoColor=white" alt="Twitter" /></a>
-  <a href="https://www.facebook.com/profile.php?id=100050543000498&mibextid=ZbWKwL"><img src="https://img.shields.io/badge/Facebook-15171D?style=for-the-badge&logo=facebook&logoColor=white" alt="Facebook" /></a>
-  <a href="https://www.youtube.com"><img src="https://img.shields.io/badge/YouTube-15171D?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube" /></a>
-  <a href="https://blog.csdn.net/qq_49797954/"><img src="https://img.shields.io/badge/CSDN-15171D?style=for-the-badge&logo=csdn&logoColor=white" alt="CSDN" /></a>
-  <a href="https://space.bilibili.com/2087892128/"><img src="https://img.shields.io/badge/Bilibili-15171D?style=for-the-badge&logo=bilibili&logoColor=white" alt="Bilibili" /></a>
-  <a href="https://www.zhihu.com"><img src="https://img.shields.io/badge/Zhihu-15171D?style=for-the-badge&logo=zhihu&logoColor=white" alt="Zhihu" /></a>
+  <a href="https://me-rose-mu.vercel.app/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/Blog-15171D?style=for-the-badge&logo=githubpages&logoColor=white" /><img src="https://img.shields.io/badge/Blog-ECE8E1?style=for-the-badge&logo=githubpages&logoColor=15171d" alt="Blog" /></picture></a>
+  <a href="https://twitter.com/WalesHua/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/Twitter-15171D?style=for-the-badge&logo=x&logoColor=white" /><img src="https://img.shields.io/badge/Twitter-ECE8E1?style=for-the-badge&logo=x&logoColor=15171d" alt="Twitter" /></picture></a>
+  <a href="https://www.facebook.com/profile.php?id=100050543000498&mibextid=ZbWKwL"><picture><source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/Facebook-15171D?style=for-the-badge&logo=facebook&logoColor=white" /><img src="https://img.shields.io/badge/Facebook-ECE8E1?style=for-the-badge&logo=facebook&logoColor=15171d" alt="Facebook" /></picture></a>
+  <a href="https://www.youtube.com"><picture><source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/YouTube-15171D?style=for-the-badge&logo=youtube&logoColor=white" /><img src="https://img.shields.io/badge/YouTube-ECE8E1?style=for-the-badge&logo=youtube&logoColor=15171d" alt="YouTube" /></picture></a>
+  <a href="https://blog.csdn.net/qq_49797954/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/CSDN-15171D?style=for-the-badge&logo=csdn&logoColor=white" /><img src="https://img.shields.io/badge/CSDN-ECE8E1?style=for-the-badge&logo=csdn&logoColor=15171d" alt="CSDN" /></picture></a>
+  <a href="https://space.bilibili.com/2087892128/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/Bilibili-15171D?style=for-the-badge&logo=bilibili&logoColor=white" /><img src="https://img.shields.io/badge/Bilibili-ECE8E1?style=for-the-badge&logo=bilibili&logoColor=15171d" alt="Bilibili" /></picture></a>
+  <a href="https://www.zhihu.com"><picture><source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/Zhihu-15171D?style=for-the-badge&logo=zhihu&logoColor=white" /><img src="https://img.shields.io/badge/Zhihu-ECE8E1?style=for-the-badge&logo=zhihu&logoColor=15171d" alt="Zhihu" /></picture></a>
 </p>
 
-<!-- visitor statistics logo 访客数统计徽标 -->
+<!-- visitor statistics logo 访客数统计徽标：同上，数值那一半保持朱红 -->
 <p align="center">
-  <a href="https://github.com/Chaosnap?tab=followers"><img src="https://img.shields.io/github/followers/Chaosnap?style=for-the-badge&logo=github&logoColor=white&label=Followers&labelColor=15171d&color=e5383b" alt="Followers" /></a>
-  <a href="https://github.com/Chaosnap?tab=repositories&sort=stargazers"><img src="https://img.shields.io/github/stars/Chaosnap?affiliations=OWNER&style=for-the-badge&logo=github&logoColor=white&label=Stars&labelColor=15171d&color=e5383b" alt="Stars" /></a>
-  <img src="https://hits.sh/github.com/Chaosnap.svg?style=for-the-badge&label=Visitors&extraCount=569&color=e5383b&labelColor=15171d&logo=github&logoColor=white" alt="访客统计" />
+  <a href="https://github.com/Chaosnap?tab=followers"><picture><source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/github/followers/Chaosnap?style=for-the-badge&logo=github&logoColor=white&label=Followers&labelColor=15171d&color=e5383b" /><img src="https://img.shields.io/github/followers/Chaosnap?style=for-the-badge&logo=github&logoColor=15171d&label=Followers&labelColor=ece8e1&color=e5383b" alt="Followers" /></picture></a>
+  <a href="https://github.com/Chaosnap?tab=repositories&sort=stargazers"><picture><source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/github/stars/Chaosnap?affiliations=OWNER&style=for-the-badge&logo=github&logoColor=white&label=Stars&labelColor=15171d&color=e5383b" /><img src="https://img.shields.io/github/stars/Chaosnap?affiliations=OWNER&style=for-the-badge&logo=github&logoColor=15171d&label=Stars&labelColor=ece8e1&color=e5383b" alt="Stars" /></picture></a>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="https://hits.sh/github.com/Chaosnap.svg?style=for-the-badge&label=Visitors&extraCount=569&color=e5383b&labelColor=15171d&logo=github&logoColor=white" /><img src="https://hits.sh/github.com/Chaosnap.svg?style=for-the-badge&label=Visitors&extraCount=569&color=e5383b&labelColor=ece8e1&logo=github&logoColor=15171d" alt="访客统计" /></picture>
 </p>
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-dark.svg" /><img src="https://raw.githubusercontent.com/Chaosnap/Chaosnap/main/profile/divider-light.svg" width="86%" alt="" /></picture></p>
