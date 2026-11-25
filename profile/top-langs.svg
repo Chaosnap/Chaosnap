@@ -148,7 +148,7 @@
           data-testid="lang-progress"
           x="71.8"
           y="0"
-          width="65.26"
+          width="65.25"
           height="8"
           fill="#f34b7d"
         />
@@ -156,7 +156,7 @@
         <rect
           mask="url(#rect-mask)"
           data-testid="lang-progress"
-          x="137.06"
+          x="137.05"
           y="0"
           width="44.61"
           height="8"
@@ -166,9 +166,9 @@
         <rect
           mask="url(#rect-mask)"
           data-testid="lang-progress"
-          x="181.67000000000002"
+          x="181.66000000000003"
           y="0"
-          width="34.27"
+          width="34.29"
           height="8"
           fill="#3572A5"
         />
@@ -176,9 +176,9 @@
         <rect
           mask="url(#rect-mask)"
           data-testid="lang-progress"
-          x="215.94000000000003"
+          x="215.95000000000002"
           y="0"
-          width="23.86"
+          width="23.85"
           height="8"
           fill="#3178c6"
         />
@@ -213,7 +213,7 @@
     <g class="stagger" style="animation-delay: 750ms">
       <circle cx="5" cy="6" r="5" fill="#adb2cb" />
       <text data-testid="lang-name" x="15" y="10" class='lang-name'>
-        VHDL 17.85%
+        VHDL 17.84%
       </text>
     </g>
   </g></g><g transform="translate(150, 0)"><g transform="translate(0, 0)">
